@@ -1,8 +1,8 @@
 ################################################################################
 # Result name for release version
-NAME   = gen_matrix.exe
+NAME   = test.exe
 # Result name for debuag version
-NAME_D = gen_matrix_d.exe
+NAME_D = test_d.exe
 ################################################################################
 # Directory layout
 SRC_DIR      = src
@@ -16,7 +16,7 @@ RESULT_DIR_D = $(RESULT_DIR)
 OPTIMAZE_COMMON = -O3
 ################################################################################
 # Processor specific optimization
-OPTIMAZE_SPECIFIC = -std=c++11
+OPTIMAZE_SPECIFIC = -std=c++11 -qopenmp
 ################################################################################
 # Optimization options
 OPTIMAZE   = -pipe $(OPTIMAZE_COMMON) $(OPTIMAZE_SPECIFIC)
@@ -29,7 +29,7 @@ CC   = /opt/intel/bin/icpc
 LINK = /opt/intel/bin/icpc
 ################################################################################
 # Compiler flags
-CFLAGS   = -c -I$(INCLUDE_DIR) $(OPTIMAZE) 
+CFLAGS   = -c -I$(INCLUDE_DIR) $(OPTIMAZE)
 CFLAGS_D = -c -I$(INCLUDE_DIR) $(OPTIMAZE_D)
 ################################################################################
 # Linker flags
@@ -38,7 +38,7 @@ LDFLAGS_D = -g $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++
 ################################################################################
 # Linker additional libraries
 LIB  = -lm
-#LIB += -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++
+LIB += -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread
 #LIB += -lcublas -lcusparse -lcudart -lcudadevrt
 ################################################################################
 RESULT   = $(RESULT_DIR)/$(NAME)
