@@ -38,7 +38,7 @@ LDFLAGS_D = -g $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++
 ################################################################################
 # Linker additional libraries
 LIB  = -lm
-LIB += -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread
+LIB += -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++
 #LIB += -lcublas -lcusparse -lcudart -lcudadevrt
 ################################################################################
 RESULT   = $(RESULT_DIR)/$(NAME)

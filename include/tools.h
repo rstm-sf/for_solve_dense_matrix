@@ -17,4 +17,9 @@
 
 void fill_matrix(double *mat, const uint32_t m, const uint32_t n, const double max_gen_val);
 
+inline void fill_vector(double *vec, const uint32_t n, const double max_gen_val) {
+	fill_matrix(vec, 1, n, max_gen_val);
+	return;
+}
+
 #endif
