@@ -20,13 +20,13 @@ OPTIMAZE_SPECIFIC = -std=c++11 -qopenmp
 ################################################################################
 # Optimization options
 OPTIMAZE   = -pipe $(OPTIMAZE_COMMON) $(OPTIMAZE_SPECIFIC)
-OPTIMAZE_D = -pipe -g $(OPTIMAZE_SPECIFIC)
+OPTIMAZE_D = -pipe -g -O0 $(OPTIMAZE_SPECIFIC)
 ################################################################################
 # Compiler
-CC   = /opt/intel/bin/icpc
+CC   = icpc
 ################################################################################
 # Linker
-LINK = /opt/intel/bin/icpc
+LINK = icpc
 ################################################################################
 # Compiler flags
 CFLAGS   = -c -I$(INCLUDE_DIR) $(OPTIMAZE)
