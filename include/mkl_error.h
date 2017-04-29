@@ -8,7 +8,7 @@
     if (info != 0) {                                                                               \
         fprintf(stderr, "LAPACK error in file '%s' in line %i: ", __FILE__, __LINE__);             \
         if (info < 0) {                                                                            \
-            fprintf(stderr, "the %d-th parameter had an illegal value.\n", info);                  \
+            fprintf(stderr, "the %d-th parameter had an illegal value.\n", -info);                  \
         } else {                                                                                   \
             fprintf(stderr, "u[%d, %d] is 0\n", info, info);                                       \
         }                                                                                          \
