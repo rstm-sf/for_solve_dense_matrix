@@ -3,25 +3,16 @@
 
 #include <cassert>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <cstdint>
 #include <cinttypes>
 #include <algorithm>
+#include <vector>
 
-#define FREE(PTR)                                                                                  \
-    if ((PTR) != nullptr)                                                                          \
-        free(PTR);
+void fill_matrix(double *mat, const int32_t nrows, const int32_t ncols, const double max_gen_val);
 
-#define DOUBLE_ALLOCATOR(PTR, N)                                                                   \
-    (PTR) = (double*)malloc((N) * sizeof(double));                                                 \
-    assert(("Error: not enought memory!", (PTR) != nullptr));
-
-void fill_matrix(double *mat, const int32_t m, const int32_t n, const double max_gen_val);
-
-inline void fill_vector(double *vec, const int32_t n, const double max_gen_val) {
-	fill_matrix(vec, 1, n, max_gen_val);
-	return;
+inline void fill_vector(double *vec, const int32_t ncols, const double max_gen_val) {
+	fill_matrix(vec, 1, ncols, max_gen_val);
 }
 
 #endif
