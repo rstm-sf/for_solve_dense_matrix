@@ -1,6 +1,7 @@
 /**************************************************************************************************/
 // nrows - the number rows of the matrix
 // ncols - the number columns of the matrix
+// matrix with row-major
 /**************************************************************************************************/
 #include "tools.h"
 #include "test_cpu.h"
@@ -21,7 +22,7 @@ int32_t main(int32_t argc, char** argv) {
 
 	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
 
-	test_gesv_cpu(nrows, ncols);
+	test_axpy_cpu(ncols);
 
 	return 0;
 }

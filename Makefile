@@ -33,8 +33,8 @@ CFLAGS   = -c -I$(INCLUDE_DIR) $(OPTIMAZE)
 CFLAGS_D = -c -I$(INCLUDE_DIR) $(OPTIMAZE_D)
 ################################################################################
 # Linker flags
-LDFLAGS   = $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++
-LDFLAGS_D = -g $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++
+LDFLAGS   = $(OPTIMAZE_SPECIFIC)
+LDFLAGS_D = -g -O0 $(OPTIMAZE_SPECIFIC)
 ################################################################################
 # Linker additional libraries
 LIB  = -lm

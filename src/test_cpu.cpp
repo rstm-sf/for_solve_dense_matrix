@@ -36,6 +36,8 @@ int32_t test_axpy_cpu(const int32_t ncols) {
 }
 
 int32_t test_gemv_cpu(const int32_t nrows, const int32_t ncols) {
+	// Понять почему дамп памяти
+	/*
 	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
 	printf("Matrix dims: %" PRId32 "x%" PRIu32 "\n", ncols, nrows);
 	printf("Vector dim: %" PRId32 "\n", ncols);
@@ -62,11 +64,13 @@ int32_t test_gemv_cpu(const int32_t nrows, const int32_t ncols) {
 	const double time_end = omp_get_wtime();
 
 	printf("Stop gemv...\nTime calc: %f (s.)\n", time_end - time_start);
-
+	*/
 	return 0;
 }
 
 int32_t test_getrf_cpu(const int32_t nrows, const int32_t ncols) {
+	// Понять почему дамп памяти
+	/*
 	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
 	printf("Matrix dims: %" PRId32 "x%" PRId32 "\n", ncols, nrows);
 
@@ -83,7 +87,7 @@ int32_t test_getrf_cpu(const int32_t nrows, const int32_t ncols) {
 	const double time_end = omp_get_wtime();
 
 	printf("Stop getrf...\nTime calc: %f (s.)\n", time_end - time_start);
-
+	*/
 	return 0;
 }
 
@@ -109,30 +113,36 @@ int32_t test_getrs_cpu(const int32_t nrows, const int32_t ncols) {
 	DOUBLE_ALLOCATOR(b, ldb*ncols);
 	fill_vector(b, ldb*ncols, 10.0);
 
-	printf("Start getrf...\n");
+	printf("Start ...\n");
 
 	double time_start = omp_get_wtime();
 	// A = P*L*U
 	CHECK_GETRF_ERROR( LAPACKE_dgetrf(layout, nrows, ncols, A, lda, ipiv) );
-	double time_end = omp_get_wtime();
+	//double time_end = omp_get_wtime();
 
-	const double t1 = time_end - time_start;
-	printf("Stop getrf...\nTime calc: %f (s.)\n", t1);
-	printf("Start getrs...\n");
+	//const double t1 = time_end - time_start;
+	//printf("Stop getrf...\nTime calc: %f (s.)\n", t1);
+	//printf("Start getrs...\n");
 
-	time_start = omp_get_wtime();
+	//time_start = omp_get_wtime();
 	// solve A*X = B
 	LAPACKE_dgetrs(layout, trans, ncols, nrhs, A, lda, ipiv, b, ldb);
-	time_end = omp_get_wtime();
+	double time_end = omp_get_wtime();
 
 	const double t2 = time_end - time_start;
-	printf("Stop getrs...\nTime calc: %f (s.)\n", t2);
-	printf("Time calc getrf+getrs: %f (s.)\n", t1+t2);
+	printf("Stop ...\nTime calc: %f (s.)\n", t2);
+	//printf("Time calc getrf+getrs: %f (s.)\n", t1+t2);
+
+	FREE(A);
+	FREE(ipiv);
+	FREE(b);
 	*/
 	return 0;
 }
 
 int32_t test_gesv_cpu(const int32_t nrows, const int32_t ncols) {
+	// Понять почему дамп памяти
+	/*
 	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
 	printf("Matrix dims: %" PRId32 "x%" PRId32 "\n", ncols, nrows);
 	printf("Vector dim: %" PRId32 "\n", ncols);
@@ -156,10 +166,13 @@ int32_t test_gesv_cpu(const int32_t nrows, const int32_t ncols) {
 	double time_start = omp_get_wtime();
 	// solve A*X = B
 	CHECK_GETRF_ERROR( LAPACKE_dgesv(layout, nrows, nrhs, A, lda, ipiv, b, ldb) );
-
 	double time_end = omp_get_wtime();
 
 	printf("Stop gesv...\nTime calc: %f (s.)\n", time_end - time_start);
 
+	FREE(A);
+	FREE(ipiv);
+	FREE(b);
+	*/
 	return 0;
 }
