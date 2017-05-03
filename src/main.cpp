@@ -4,6 +4,7 @@
 // matrix with column-major
 /**************************************************************************************************/
 #include "test_cpu.h"
+#include "test_gpu.h"
 
 int32_t main(int32_t argc, char** argv) {
 	int32_t nrows = 0, ncols = 0;
@@ -21,7 +22,7 @@ int32_t main(int32_t argc, char** argv) {
 
 	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
 
-	test_gesv_cpu(ncols);
+	test_getrs_gpu(nrows, ncols);
 
 	return 0;
 }
