@@ -43,10 +43,10 @@ int32_t test_diff_gemv(const int32_t n) {
 	printf("\nCPU part.\n");
 	printf("Start mkl gemv...\n");
 
-	const float time_start = (float)omp_get_wtime();
+	double time_start = omp_get_wtime();
 	// y := alpha*A*x + beta*y
 	cblas_dgemv(layout, trans_mkl, n, n, alpha, h_A, lda, h_x, 1, beta, h_y, 1);
-	const float time_end = (float)omp_get_wtime();
+	double time_end = omp_get_wtime();
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", time_end - time_start);
 
@@ -143,21 +143,21 @@ int32_t test_diff_solve(const int32_t n) {
 	printf("Start mkl getrf...\n");
 	float t1 = 0.0f, t2 = 0.0f;
 
-	float time_start = (float)omp_get_wtime();
+	double time_start = omp_get_wtime();
 	// A = P*L*U
 	CHECK_GETRF_ERROR( LAPACKE_dgetrf(layout, n, n, h_A, lda, h_ipiv) );
-	float time_end = (float)omp_get_wtime();
+	double time_end = omp_get_wtime();
 
-	t1 = time_end - time_start;
+	t1 = (float)(time_end - time_start);
 	printf("Stop mkl getrf...\nTime calc: %f (s.)\n", t1);
 	printf("Start mkl getrs...\n");
 
-	time_start = (float)omp_get_wtime();
+	time_start = omp_get_wtime();
 	// solve A*X = B
 	LAPACKE_dgetrs(layout, trans_mkl, n, nrhs, h_A, lda, h_ipiv, h_b, ldb);
-	time_end = (float)omp_get_wtime();
+	time_end = omp_get_wtime();
 
-	t2 = time_end - time_start;
+	t2 = (float)(time_end - time_start);
 	printf("Stop mkl getrs...\nTime calc: %f (s.)\n", t2);
 	printf("Time calc mkl getrf+getrs: %f (s.)\n", t1+t2);
 
