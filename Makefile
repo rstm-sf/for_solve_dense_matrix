@@ -31,7 +31,7 @@ DEVCC = nvcc
 LINK = $(DEVCC)
 ################################################################################
 # gencode
-ARCH = -gencode arch=compute_35,code=sm_35
+ARCH = -gencode arch=compute_50,code=sm_50
 ################################################################################
 # Compiler flags
 CFLAGS   = -c -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE)"
@@ -50,9 +50,8 @@ RESULT     = $(RESULT_DIR)/$(NAME)
 RESULT_D   = $(RESULT_DIR_D)/$(NAME_D)
 
 OBJS       = \
-              $(BUILD_DIR)/tools.o    \
-              $(BUILD_DIR)/test_cpu.o \
-              $(BUILD_DIR)/test_gpu.o \
+              $(BUILD_DIR)/tools.o           \
+              $(BUILD_DIR)/test_cpu_vs_gpu.o \
               $(BUILD_DIR)/main.o
 
 OBJS_D     = $(subst $(BUILD_DIR)/, $(BUILD_DIR_D)/, $(OBJS))

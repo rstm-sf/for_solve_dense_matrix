@@ -20,7 +20,7 @@
 
 #define CUDA_SAFE_CALL( call )  CUDA_SAFE_CALL_NO_SYNC( call );
 
-#define CUSOLVER_CALL(call)  {                                                                     \
+#define CUSOLVER_CALL( call ) {                                                                    \
     cusolverStatus_t err = call;                                                                   \
     if( err != CUSOLVER_STATUS_SUCCESS ) {                                                         \
         fprintf(stderr, "cuSOLVER error in file '%s' in line %d: %s.\n",                           \
@@ -30,7 +30,7 @@
     }                                                                                              \
 }
 
-#define CUSPARSE_CALL(call)  {                                                                     \
+#define CUSPARSE_CALL( call ) {                                                                    \
     cusparseStatus_t err = call;                                                                   \
     if( err != CUSPARSE_STATUS_SUCCESS ) {                                                         \
         fprintf(stderr, "cuSPARSE error in file '%s' in line %d: %s.\n",                           \
@@ -40,7 +40,7 @@
     }                                                                                              \
 }
 
-#define CUBLAS_CALL(call) {                                                                        \
+#define CUBLAS_CALL( call ) {                                                                      \
     cublasStatus_t err = call;                                                                     \
     if( err != CUBLAS_STATUS_SUCCESS ) {                                                           \
         fprintf(stderr, "cuBLAS error in file '%s' in line %d: %s.\n",                             \
@@ -50,8 +50,7 @@
     }                                                                                              \
 }
 
-static const char *_cudaGetErrorEnum(cusolverStatus_t error)
-{
+static const char *_cudaGetErrorEnum(cusolverStatus_t error) {
     switch (error)
     {
         case CUSOLVER_STATUS_SUCCESS:
@@ -82,8 +81,7 @@ static const char *_cudaGetErrorEnum(cusolverStatus_t error)
     return "<unknown>";
 }
 
-static const char *_cudaGetErrorEnum(cusparseStatus_t error)
-{
+static const char *_cudaGetErrorEnum(cusparseStatus_t error) {
     switch (error)
     {
         case CUSPARSE_STATUS_SUCCESS:
@@ -117,8 +115,7 @@ static const char *_cudaGetErrorEnum(cusparseStatus_t error)
     return "<unknown>";
 }
 
-static const char *_cudaGetErrorEnum(cublasStatus_t error)
-{
+static const char *_cudaGetErrorEnum(cublasStatus_t error) {
     switch (error)
     {
         case CUBLAS_STATUS_SUCCESS:

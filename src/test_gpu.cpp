@@ -30,7 +30,7 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 	DOUBLE_ALLOCATOR_CUDA(d_b, ldb*nrhs);
 
 	CUDA_SAFE_CALL( cudaMemcpy(d_A, A.data(), sizeof(double)*ncols*lda, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_b, h_b.data(), sizeof(double)*ncols, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_b, h_b.data(), sizeof(double)*ldb*nrhs, cudaMemcpyHostToDevice) );
 
 	int32_t bufferSize = 0;
 	int32_t *d_info = nullptr, h_info = 0;
