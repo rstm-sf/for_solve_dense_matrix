@@ -26,10 +26,10 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 
 	CUSOLVER_CALL( cusolverDnSetStream(handle, stream) );
 
-	DOUBLE_ALLOCATOR_CUDA(d_A, nrows*ncols);
-	DOUBLE_ALLOCATOR_CUDA(d_b, nrows);
+	DOUBLE_ALLOCATOR_CUDA(d_A, ncols*lda);
+	DOUBLE_ALLOCATOR_CUDA(d_b, ldb*nrhs);
 
-	CUDA_SAFE_CALL( cudaMemcpy(d_A, A.data(), sizeof(double)*nrows*ncols, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_A, A.data(), sizeof(double)*ncols*lda, cudaMemcpyHostToDevice) );
 	CUDA_SAFE_CALL( cudaMemcpy(d_b, h_b.data(), sizeof(double)*ncols, cudaMemcpyHostToDevice) );
 
 	int32_t bufferSize = 0;
@@ -51,7 +51,7 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 	printf("Start getrf...\n");
 
 	CUDA_TIMER_START( t_start, stream );
-	CUSOLVER_CALL( cusolverDnDgetrf(handle, nrows, nrows, d_A, lda, buffer, d_ipiv, d_info) );
+	CUSOLVER_CALL( cusolverDnDgetrf(handle, nrows, ncols, d_A, lda, buffer, d_ipiv, d_info) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream, t1 );
 
 	printf("Stop getrf...\nTime calc: %f (s.)\n", t1);
@@ -78,5 +78,64 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 	FREE_CUDA( d_A );
 	FREE_CUDA( d_b );
 
+	return 0;
+}
+
+int32_t test_gemv_gpu(const int32_t nrows, const int32_t ncols) {
+	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
+	printf("Matrix dims: %" PRId32 "x%" PRIu32 "\n", ncols, nrows);
+	printf("Vector dim: %" PRId32 "\n", ncols);
+
+	const double alpha = 1.0;
+	const double beta = 1.0;
+
+	std::vector<double> h_x(ncols);
+	std::vector<double> h_y(ncols);
+	fill_vector(h_x.data(), ncols, 100.0);
+	fill_vector(h_y.data(), ncols, 100.0);
+
+	std::vector<double> h_A(ncols*nrows);
+	fill_matrix(h_A.data(), nrows, ncols, 100.0);
+	int32_t lda = nrows;
+
+	double *d_A = nullptr;
+	cublasOperation_t trans = CUBLAS_OP_N;
+	double *d_x = nullptr;
+	double *d_y = nullptr;
+	DOUBLE_ALLOCATOR_CUDA(d_A, nrows*ncols);
+	DOUBLE_ALLOCATOR_CUDA(d_x, ncols);
+	DOUBLE_ALLOCATOR_CUDA(d_y, ncols);
+	CUDA_SAFE_CALL( cudaMemcpy(d_A, h_A.data(), sizeof(double)*nrows*ncols, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_x, h_x.data(), sizeof(double)*ncols, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_y, h_y.data(), sizeof(double)*ncols, cudaMemcpyHostToDevice) );
+
+	cublasHandle_t handle = nullptr;
+	cudaStream_t stream = nullptr;
+	CUBLAS_CALL( cublasCreate(&handle) );
+	CUDA_SAFE_CALL( cudaStreamCreate(&stream) );
+	CUBLAS_CALL( cublasSetStream(handle, stream) );
+
+	float t1 = 0.0f;
+	cudaEvent_t t_start, t_stop;
+	CUDA_SAFE_CALL( cudaEventCreate(&t_start) );
+	CUDA_SAFE_CALL( cudaEventCreate(&t_stop) );
+	
+	printf("Start gemv...\n");
+
+	CUDA_TIMER_START( t_start, stream );
+	// y := alpha*A*x + beta*y
+	CUBLAS_CALL( cublasDgemv(handle, trans, nrows, ncols, &alpha, d_A, lda, d_x, 1, &beta, d_y, 1) );
+	CUDA_TIMER_STOP( t_start, t_stop, stream, t1 );	
+
+	printf("Stop gemv...\nTime calc: %f (s.)\n", t1);
+
+	CUDA_SAFE_CALL( cudaEventDestroy(t_start) );
+	CUDA_SAFE_CALL( cudaEventDestroy(t_stop) );
+	if (handle) { CUBLAS_CALL( cublasDestroy(handle) ); }
+	if (stream) { CUDA_SAFE_CALL( cudaStreamDestroy(stream) ); }
+	FREE_CUDA( d_A );
+	FREE_CUDA( d_x );
+	FREE_CUDA( d_y );
+	
 	return 0;
 }

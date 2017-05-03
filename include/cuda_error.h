@@ -33,7 +33,7 @@
 #define CUSPARSE_CALL(call)  {                                                                     \
     cusparseStatus_t err = call;                                                                   \
     if( err != CUSPARSE_STATUS_SUCCESS ) {                                                         \
-        fprintf(stderr, "cuSPARSE error in file '%s' in line %d: %s.\n",                          \
+        fprintf(stderr, "cuSPARSE error in file '%s' in line %d: %s.\n",                           \
             __FILE__,__LINE__, _cudaGetErrorEnum( err ));                                          \
         cudaDeviceReset();                                                                         \
         exit(EXIT_FAILURE);                                                                        \

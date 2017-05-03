@@ -22,7 +22,7 @@ int32_t main(int32_t argc, char** argv) {
 
 	assert(("Error: dims <= 0!", nrows > 0 || ncols > 0));
 
-	test_getrs_gpu(nrows, ncols);
+	test_gemv_gpu(nrows, ncols);
 
 	return 0;
 }

@@ -26,6 +26,9 @@
     CUDA_SAFE_CALL( cudaEventElapsedTime(&(time), (eventStart), (eventStop)));                     \
     (time) /= 1000;
 
-int32_t test_getrs_gpu(const int32_t nrows, const int32_t n);
+// solve A*X = B ~ P*L*U*X = B, where A is an n-by-n matrix
+int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols);
+// y := alpha*A*x + beta*y
+int32_t test_gemv_gpu(const int32_t nrows, const int32_t ncols);
 
 #endif
