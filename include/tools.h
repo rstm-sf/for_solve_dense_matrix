@@ -68,4 +68,6 @@ inline void fill_vector(double *vec, const int32_t n, const double max_gen_val) 
     fill_matrix(vec, 1, n, max_gen_val);
 }
 
+void print_to_file_time(const char* fname, const int32_t n, const float time);
+
 #endif

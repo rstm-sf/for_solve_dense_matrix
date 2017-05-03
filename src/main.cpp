@@ -6,7 +6,7 @@
 #include "test_cpu_vs_gpu.h"
 
 int32_t main(int32_t argc, char** argv) {
-	int32_t n = 100, id_test = 2;
+	int32_t n = 100, id_test = 1;
 
 	if (argc > 1) {
 		for (int32_t i = 1; i < argc; ++i) {
@@ -18,11 +18,14 @@ int32_t main(int32_t argc, char** argv) {
 	}
 
 	switch (id_test) {
-	case 1:
-		test_diff_gemv(n); break;
+	case 1: // mkl and cuda solve
+		test_solve(n, true, true); break;
 
-	case 2:
-		test_diff_solve(n); break;
+	case 2: // mkl solve
+		test_solve(n, true, false); break;
+
+	case 3: // cuda solve
+		test_solve(n, false, true); break;
 
 	default:
 		printf("There is no such id test.\n");
