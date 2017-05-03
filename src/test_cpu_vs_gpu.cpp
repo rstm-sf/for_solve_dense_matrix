@@ -82,7 +82,9 @@ int32_t solve_mkl(const int32_t n, const double *A, const double *b) {
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
 
 	const double residual = cblas_dnrm2(n, Ax_b, 1);
-	printf("Absolute residual: %e\n\n", residual / nrm_b);
+	const double abs_residual = residual / nrm_b;
+	printf("Absolute residual: %e\n\n", abs_residual);
+	print_to_file_residual("mkl_abs_residual_time.log", n, abs_residual);
 
 	FREE(LU);
 	FREE(x);
@@ -176,7 +178,9 @@ int32_t solve_cuda(const int32_t n, const double *A, const double *b) {
 
 	double residual = 0.0;
 	cublasDnrm2(handle2, n, d_Ax_b, 1, &residual);
-	printf("Absolute residual: %e\n\n", residual / nrm_b);
+	const double abs_residual = residual / nrm_b;
+	printf("Absolute residual: %e\n\n", abs_residual);
+	print_to_file_residual("cuda_abs_residual_time.log", n, abs_residual);
 
 	CUDA_SAFE_CALL( cudaEventDestroy(t_start) );
 	CUDA_SAFE_CALL( cudaEventDestroy(t_stop) );

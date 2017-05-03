@@ -17,3 +17,9 @@ void print_to_file_time(const char* fname, const int32_t n, const float time) {
 	fprintf(pFile, "%" PRId32 "\t%f\n", n, time);
 	fclose(pFile);
 }
+
+void print_to_file_residual(const char* fname, const int32_t n, const double residual) {
+	FILE *pFile = fopen (fname, "a+");
+	fprintf(pFile, "%" PRId32 "\t%e\n", n, residual);
+	fclose(pFile);
+}
