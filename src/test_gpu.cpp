@@ -6,17 +6,17 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 	printf("Vector dim: %" PRId32 "\n", ncols);
 
 	int32_t lda = nrows;
-	std::vector<double> A(ncols*lda);
+	std::vector<FLOAT> A(ncols*lda);
 	fill_matrix(A.data(), lda, ncols, 100.0);
 
 	int32_t nrhs = 1;
 	int32_t ldb = nrows;
-	std::vector<double> h_b(ldb*nrhs);
+	std::vector<FLOAT> h_b(ldb*nrhs);
 	fill_vector(h_b.data(), ldb*nrhs, 10.0);
 
-	double *d_A = nullptr;
+	FLOAT *d_A = nullptr;
 	cublasOperation_t trans = CUBLAS_OP_N;
-	double *d_b = nullptr;
+	FLOAT *d_b = nullptr;
 
 	cusolverDnHandle_t handle = nullptr;
 	cudaStream_t stream = nullptr;
@@ -26,22 +26,22 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 
 	CUSOLVER_CALL( cusolverDnSetStream(handle, stream) );
 
-	DOUBLE_ALLOCATOR_CUDA(d_A, ncols*lda);
-	DOUBLE_ALLOCATOR_CUDA(d_b, ldb*nrhs);
+	CUDA_FLOAT_ALLOCATOR(d_A, ncols*lda);
+	CUDA_FLOAT_ALLOCATOR(d_b, ldb*nrhs);
 
-	CUDA_SAFE_CALL( cudaMemcpy(d_A, A.data(), sizeof(double)*ncols*lda, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_b, h_b.data(), sizeof(double)*ldb*nrhs, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_A, A.data(), sizeof(FLOAT)*ncols*lda, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_b, h_b.data(), sizeof(FLOAT)*ldb*nrhs, cudaMemcpyHostToDevice) );
 
 	int32_t bufferSize = 0;
 	int32_t *d_info = nullptr, h_info = 0;
-	INT32_ALLOCATOR_CUDA(d_info, 1);
+	CUDA_INT32_ALLOCATOR(d_info, 1);
 	CUDA_SAFE_CALL( cudaMemset(d_info, 0, sizeof(int32_t)) );
-	double *buffer = nullptr;
+	FLOAT *buffer = nullptr;
 	int32_t *d_ipiv = nullptr;
-	INT32_ALLOCATOR_CUDA(d_ipiv, std::min(nrows, ncols));
+	CUDA_INT32_ALLOCATOR(d_ipiv, std::min(nrows, ncols));
 
 	CUSOLVER_CALL( cusolverDnDgetrf_bufferSize(handle, nrows, ncols, d_A, lda, &bufferSize) );
-	DOUBLE_ALLOCATOR_CUDA(buffer, bufferSize);
+	CUDA_FLOAT_ALLOCATOR(buffer, bufferSize);
 
 	float t1 = 0.0f, t2 = 0.0f;
 	cudaEvent_t t_start, t_stop;
@@ -72,11 +72,11 @@ int32_t test_getrs_gpu(const int32_t nrows, const int32_t ncols) {
 	CUDA_SAFE_CALL( cudaEventDestroy(t_stop) );
 	if (handle) { CUSOLVER_CALL( cusolverDnDestroy(handle) ); }
 	if (stream) { CUDA_SAFE_CALL( cudaStreamDestroy(stream) ); }
-	FREE_CUDA( d_info );
-	FREE_CUDA( buffer );
-	FREE_CUDA( d_ipiv );
-	FREE_CUDA( d_A );
-	FREE_CUDA( d_b );
+	CUDA_FREE( d_info );
+	CUDA_FREE( buffer );
+	CUDA_FREE( d_ipiv );
+	CUDA_FREE( d_A );
+	CUDA_FREE( d_b );
 
 	return 0;
 }
@@ -86,28 +86,28 @@ int32_t test_gemv_gpu(const int32_t nrows, const int32_t ncols) {
 	printf("Matrix dims: %" PRId32 "x%" PRIu32 "\n", ncols, nrows);
 	printf("Vector dim: %" PRId32 "\n", ncols);
 
-	const double alpha = 1.0;
-	const double beta = 1.0;
+	const FLOAT alpha = 1.0;
+	const FLOAT beta = 1.0;
 
-	std::vector<double> h_x(ncols);
-	std::vector<double> h_y(ncols);
+	std::vector<FLOAT> h_x(ncols);
+	std::vector<FLOAT> h_y(ncols);
 	fill_vector(h_x.data(), ncols, 100.0);
 	fill_vector(h_y.data(), ncols, 100.0);
 
-	std::vector<double> h_A(ncols*nrows);
+	std::vector<FLOAT> h_A(ncols*nrows);
 	fill_matrix(h_A.data(), nrows, ncols, 100.0);
 	int32_t lda = nrows;
 
-	double *d_A = nullptr;
+	FLOAT *d_A = nullptr;
 	cublasOperation_t trans = CUBLAS_OP_N;
-	double *d_x = nullptr;
-	double *d_y = nullptr;
-	DOUBLE_ALLOCATOR_CUDA(d_A, nrows*ncols);
-	DOUBLE_ALLOCATOR_CUDA(d_x, ncols);
-	DOUBLE_ALLOCATOR_CUDA(d_y, ncols);
-	CUDA_SAFE_CALL( cudaMemcpy(d_A, h_A.data(), sizeof(double)*nrows*ncols, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_x, h_x.data(), sizeof(double)*ncols, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_y, h_y.data(), sizeof(double)*ncols, cudaMemcpyHostToDevice) );
+	FLOAT *d_x = nullptr;
+	FLOAT *d_y = nullptr;
+	CUDA_FLOAT_ALLOCATOR(d_A, nrows*ncols);
+	CUDA_FLOAT_ALLOCATOR(d_x, ncols);
+	CUDA_FLOAT_ALLOCATOR(d_y, ncols);
+	CUDA_SAFE_CALL( cudaMemcpy(d_A, h_A.data(), sizeof(FLOAT)*nrows*ncols, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_x, h_x.data(), sizeof(FLOAT)*ncols, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_y, h_y.data(), sizeof(FLOAT)*ncols, cudaMemcpyHostToDevice) );
 
 	cublasHandle_t handle = nullptr;
 	cudaStream_t stream = nullptr;
@@ -133,9 +133,9 @@ int32_t test_gemv_gpu(const int32_t nrows, const int32_t ncols) {
 	CUDA_SAFE_CALL( cudaEventDestroy(t_stop) );
 	if (handle) { CUBLAS_CALL( cublasDestroy(handle) ); }
 	if (stream) { CUDA_SAFE_CALL( cudaStreamDestroy(stream) ); }
-	FREE_CUDA( d_A );
-	FREE_CUDA( d_x );
-	FREE_CUDA( d_y );
+	CUDA_FREE( d_A );
+	CUDA_FREE( d_x );
+	CUDA_FREE( d_y );
 	
 	return 0;
 }

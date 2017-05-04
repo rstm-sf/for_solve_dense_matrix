@@ -1,6 +1,8 @@
 #ifndef __TOOLS_H__
 #define __TOOLS_H__
 
+#include "config.h"
+
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -18,27 +20,34 @@
 #include <cublas_v2.h>
 #include <cusolverDn.h>
 
-#define FREE(PTR)                                                                                  \
+#define MKL_FREE(PTR)                                                                              \
     if ((PTR) != nullptr)                                                                          \
         mkl_free(PTR);
 
-#define DOUBLE_ALLOCATOR(PTR, N)                                                                   \
-    (PTR) = (double *)mkl_malloc((N) * sizeof(double), 64);                                        \
+#define MKL_FLOAT_ALLOCATOR(PTR, N)                                                                \
+    (PTR) = (FLOAT *)mkl_malloc((N) * sizeof(FLOAT), 64);                                          \
     assert(("Error: not enought memory!", (PTR) != nullptr));
 
-#define INT32_ALLOCATOR(PTR, N)                                                                    \
+#define MKL_INT32_ALLOCATOR(PTR, N)                                                                \
     (PTR) = (int32_t *)mkl_malloc((N) * sizeof(int32_t), 32);                                      \
     assert(("Error: not enought memory!", (PTR) != nullptr));
 
-#define FREE_CUDA(PTR)                                                                             \
+#define MKL_TIMER_START(eventStart)                                                                \
+    eventStart = omp_get_wtime()
+
+#define MKL_TIMER_STOP(eventStart, eventStop, time)                                                \
+    eventStop = omp_get_wtime();                                                                   \
+    time = (float)(eventStop - eventStart)
+
+#define CUDA_FREE(PTR)                                                                             \
     if ((PTR) != nullptr)                                                                          \
         CUDA_SAFE_CALL( cudaFree(PTR) );
 
-#define DOUBLE_ALLOCATOR_CUDA(PTR, N)                                                              \
-    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(double)*(N)) );
+#define CUDA_FLOAT_ALLOCATOR(PTR, N)                                                               \
+    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
 
-#define INT32_ALLOCATOR_CUDA(PTR, N)                                                               \
-    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(double)*(N)) );
+#define CUDA_INT32_ALLOCATOR(PTR, N)                                                               \
+    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
 
 #define CUDA_TIMER_START(eventStart, stream)                                                       \
     CUDA_SAFE_CALL( cudaEventRecord((eventStart), (stream)) );
@@ -62,13 +71,13 @@
     }                                                                                              \
 }
 
-void fill_matrix(double *mat, const int32_t nrows, const int32_t ncols, const double max_gen_val);
+void fill_matrix(FLOAT *mat, const int32_t nrows, const int32_t ncols, const FLOAT max_gen_val);
 
-inline void fill_vector(double *vec, const int32_t n, const double max_gen_val) {
+inline void fill_vector(FLOAT *vec, const int32_t n, const FLOAT max_gen_val) {
     fill_matrix(vec, 1, n, max_gen_val);
 }
 
 void print_to_file_time(const char* fname, const int32_t n, const float time);
-void print_to_file_residual(const char* fname, const int32_t n, const double residual);
+void print_to_file_residual(const char* fname, const int32_t n, const FLOAT residual);
 
 #endif
