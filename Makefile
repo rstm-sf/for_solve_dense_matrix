@@ -34,11 +34,13 @@ LINK = $(DEVCC)
 ARCH = -gencode arch=compute_50,code=sm_50
 ####################################################################################################
 # Compiler flags
-CFLAGS   = -c -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE)" -DIS_DOUBLE
-CFLAGS_D = -c -g -G -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE_D)" -DIS_DOUBLE
+# -DIS_DOUBLE use double precision
+CFLAGS   = -c -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE)" #-DIS_DOUBLE
+CFLAGS_D = -c -g -G -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE_D)" #-DIS_DOUBLE
 ####################################################################################################
 # Linker flags
 #-mkl:sequential for sequential version
+#-mkl:parallel for parallel version
 LDFLAGS   = -ccbin=$(CC) -Xcompiler "-mkl:parallel $(OPTIMAZE_SPECIFIC)"
 LDFLAGS_D = $(LDFLAGS)
 ####################################################################################################

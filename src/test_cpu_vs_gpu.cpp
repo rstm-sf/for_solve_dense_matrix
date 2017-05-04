@@ -83,7 +83,7 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	const FLOAT residual = mkl_nrm2(n, Ax_b, 1);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
-	print_to_file_residual("mkl_abs_residual_time.log", n, abs_residual);
+	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
 
 	MKL_FREE(LU);
 	MKL_FREE(x);
@@ -95,12 +95,20 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	const int32_t nrhs = 1;
 	int32_t lda = n;
 	int32_t ldx = n;
+
+	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f, t4 = 0.0f, t5 = 0.0f, t_tmp = 0.0f;
+	cudaEvent_t t_start, t_stop;
+	CUDA_SAFE_CALL( cudaEventCreate(&t_start) );
+	CUDA_SAFE_CALL( cudaEventCreate(&t_stop) );
+
 	FLOAT *d_A = nullptr;
 	FLOAT *d_b = nullptr;
+	CUDA_TIMER_START( t_start, 0 );
 	CUDA_FLOAT_ALLOCATOR(d_A, lda*n);
 	CUDA_FLOAT_ALLOCATOR(d_b, ldx*nrhs);
 	CUDA_SAFE_CALL( cudaMemcpy(d_A, A, sizeof(FLOAT)*n*lda, cudaMemcpyHostToDevice) );
 	CUDA_SAFE_CALL( cudaMemcpy(d_b, b, sizeof(FLOAT)*nrhs*ldx, cudaMemcpyHostToDevice) );
+	CUDA_TIMER_STOP( t_start, t_stop, 0, t5 );
 
 	cusolverDnHandle_t handle1 = nullptr;
 	cudaStream_t stream1 = nullptr;
@@ -116,8 +124,11 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_x = nullptr;
+	CUDA_TIMER_START( t_start, 0 );
 	CUDA_FLOAT_ALLOCATOR(d_LU, n*lda);
 	CUDA_FLOAT_ALLOCATOR(d_x, ldx*nrhs);
+	CUDA_TIMER_STOP( t_start, t_stop, 0, t_tmp );
+	t5 += t_tmp;
 	CUBLAS_CALL( cuda_copy(handle2, n*lda, d_A, 1, d_LU, 1) );
 	CUBLAS_CALL( cuda_copy(handle2, n, d_b, 1, d_x, 1) );
 
@@ -128,14 +139,24 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	FLOAT *buffer = nullptr;
 	int32_t *d_ipiv = nullptr;
 	CUDA_INT32_ALLOCATOR(d_ipiv, n);
-	CUSOLVER_CALL( cuda_getrf_bufferSize(handle1, n, n, d_LU, lda, bufferSize) );
-	CUDA_FLOAT_ALLOCATOR(buffer, bufferSize);
 
+	printf("\nStart cuda getrf_bufferSize...\n");
+
+	CUDA_TIMER_START( t_start, stream1 );
+	CUSOLVER_CALL( cuda_getrf_bufferSize(handle1, n, n, d_LU, lda, bufferSize) );
+	CUDA_TIMER_STOP( t_start, t_stop, stream1, t4 );
+
+	printf("Stop cuda getrf_bufferSize...\nTime calc: %f (s.)\n", t4);
+	print_to_file_time("cuda_getrf_bufferSize_time.log", n, t4);
+
+	CUDA_TIMER_START( t_start, 0 );
+	CUDA_FLOAT_ALLOCATOR(buffer, bufferSize);
+	CUDA_TIMER_STOP( t_start, t_stop, 0, t_tmp );
+	t5 += t_tmp;
+
+	printf("Overhead time: %f (s.)\n", t5);
+	print_to_file_time("cuda_overhead_time.log", n, t5);
 	printf("Start cuda getrf...\n");
-	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
-	cudaEvent_t t_start, t_stop;
-	CUDA_SAFE_CALL( cudaEventCreate(&t_start) );
-	CUDA_SAFE_CALL( cudaEventCreate(&t_stop) );
 
 	CUDA_TIMER_START( t_start, stream1 );
 	CUSOLVER_CALL( cuda_getrf(handle1, n, n, d_LU, lda, buffer, d_ipiv, d_info) );
@@ -180,7 +201,7 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	cuda_nrm2(handle2, n, d_Ax_b, 1, residual);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
-	print_to_file_residual("cuda_abs_residual_time.log", n, abs_residual);
+	print_to_file_residual("cuda_abs_residual.log", n, abs_residual);
 
 	CUDA_SAFE_CALL( cudaEventDestroy(t_start) );
 	CUDA_SAFE_CALL( cudaEventDestroy(t_stop) );
