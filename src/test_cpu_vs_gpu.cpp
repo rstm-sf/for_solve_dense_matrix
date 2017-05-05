@@ -95,8 +95,10 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 }
 
 int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
+	const int32_t nrhs = 1;
 	const int32_t nfact = n;
 	int32_t lda = n;
+	int32_t ldx = 1;
 	FLOAT *x = nullptr;
 	MKL_FLOAT_ALLOCATOR(x, n);
 	blas_copy_cpu(n, b, 1, x, 1);
@@ -119,7 +121,7 @@ int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	MKL_TIMER_START(t_start);
 	// solve A*X = B
-	lapack_getrsvnpi_cpu(LAPACK_COL_MAJOR, 'N', n, LU, lda, x, 1);
+	lapack_getrsnpi_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, x, ldx);
 	MKL_TIMER_STOP(t_start, t_stop, t2);
 
 	printf("Stop mkl getrsv_npi...\nTime calc: %f (s.)\n", t2);

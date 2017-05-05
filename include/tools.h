@@ -65,7 +65,7 @@ void print_to_file_residual(const char* fname, const int32_t n, const FLOAT resi
 
 void print_version_mkl();
 
-int32_t lapack_getrsvnpi_cpu(const int32_t layout, const char trans, const int32_t n,
-                             const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t ldb);
+int32_t lapack_getrsnpi_cpu(const int32_t layout, const char trans, const int32_t n,
+    const int32_t nrhs, const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t ldb);
 
 #endif

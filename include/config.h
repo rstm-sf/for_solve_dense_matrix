@@ -39,6 +39,8 @@ typedef double FLOAT;
         cblas_dnrm2(n, x, incx)
 #define blas_trsv_cpu(layout, uplo, trans, diag, n, a, lda, x, incx)                               \
         cblas_dtrsv(layout, uplo, trans, diag, n, a, lda, x, incx)
+#define blas_trsm_cpu(layout, side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)               \
+        cblas_dtrsm(layout, side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)
 
 #define lapack_getrf_bufferSize_gpu(handle, m, n, a, lda, lwork)                                   \
         cusolverDnDgetrf_bufferSize(handle, m, n, a, lda, &lwork)
@@ -73,6 +75,8 @@ typedef float FLOAT;
         cblas_snrm2(n, x, incx)
 #define blas_trsv_cpu(layout, uplo, trans, diag, n, a, lda, x, incx)                               \
         cblas_strsv(layout, uplo, trans, diag, n, a, lda, x, incx)
+#define blas_trsm_cpu(layout, side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)               \
+        cblas_strsm(layout, side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)
 
 #define lapack_getrf_bufferSize_gpu(handle, m, n, a, lda, lwork)                                   \
         cusolverDnSgetrf_bufferSize(handle, m, n, a, lda, &lwork)
