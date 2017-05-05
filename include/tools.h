@@ -3,29 +3,12 @@
 
 #include "config.h"
 
-#include <cassert>
-#include <cstdio>
-#include <cstring>
-#include <cstdint>
-#include <cinttypes>
-#include <algorithm>
-#include <vector>
-
-#include <mkl.h>
-#include "mkl_error.h"
-#include <omp.h>
-
-#include <cuda_runtime.h>
-#include "cuda_error.h"
-#include <cublas_v2.h>
-#include <cusolverDn.h>
-
 #define MKL_FREE(PTR)                                                                              \
     if ((PTR) != nullptr)                                                                          \
-        mkl_free(PTR);
+        mkl_free(PTR)
 
 #define MKL_FLOAT_ALLOCATOR(PTR, N)                                                                \
-    (PTR) = (FLOAT *)mkl_malloc((N) * sizeof(FLOAT), 64);                                          \
+    (PTR) = (FLOAT *)mkl_malloc((N) * sizeof(FLOAT), FLOAT_ALIGNMENT);                             \
     assert(("Error: not enought memory!", (PTR) != nullptr));
 
 #define MKL_INT32_ALLOCATOR(PTR, N)                                                                \
@@ -41,7 +24,7 @@
 
 #define CUDA_FREE(PTR)                                                                             \
     if ((PTR) != nullptr)                                                                          \
-        CUDA_SAFE_CALL( cudaFree(PTR) );
+        CUDA_SAFE_CALL( cudaFree(PTR) )
 
 #define CUDA_FLOAT_ALLOCATOR(PTR, N)                                                               \
     CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
@@ -50,13 +33,13 @@
     CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
 
 #define CUDA_TIMER_START(eventStart, stream)                                                       \
-    CUDA_SAFE_CALL( cudaEventRecord((eventStart), (stream)) );
+    CUDA_SAFE_CALL( cudaEventRecord((eventStart), (stream)) )
 
 #define CUDA_TIMER_STOP(eventStart, eventStop, stream, time)                                       \
     CUDA_SAFE_CALL( cudaEventRecord((eventStop), (stream)) );                                      \
     CUDA_SAFE_CALL( cudaEventSynchronize(eventStop) );                                             \
     CUDA_SAFE_CALL( cudaEventElapsedTime(&(time), (eventStart), (eventStop)));                     \
-    (time) /= 1000;
+    (time) /= 1000
 
 #define CHECK_GETRF_ERROR( call ) {                                                                \
     int32_t info = call;                                                                           \
@@ -79,5 +62,7 @@ inline void fill_vector(FLOAT *vec, const int32_t n, const FLOAT max_gen_val) {
 
 void print_to_file_time(const char* fname, const int32_t n, const float time);
 void print_to_file_residual(const char* fname, const int32_t n, const FLOAT residual);
+
+void print_version_mkl();
 
 #endif

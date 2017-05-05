@@ -15,7 +15,7 @@ int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_cuda_
 
 	// calculate b
 	const int32_t lda = n;
-	mkl_gemv(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x_init, 1, 0.0, b, 1);
+	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x_init, 1, 0.0, b, 1);
 
 	if (is_mkl_solve)
 		mkl_solve(n, A, b);
@@ -37,10 +37,10 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	int32_t ldx = n;
 	FLOAT *x = nullptr;
 	MKL_FLOAT_ALLOCATOR(x, ldx*nrhs);
-	mkl_copy(n, b, 1, x, 1);
+	blas_copy_cpu(n, b, 1, x, 1);
 	FLOAT *LU = nullptr;
 	MKL_FLOAT_ALLOCATOR(LU, n*lda);
-	mkl_copy(n*lda, A, 1, LU, 1);
+	blas_copy_cpu(n*lda, A, 1, LU, 1);
 
 	printf("\nStart mkl getrf...\n");
 	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
@@ -48,7 +48,7 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	MKL_TIMER_START(t_start);
 	// A = P*L*U
-	CHECK_GETRF_ERROR( mkl_getrf(LAPACK_COL_MAJOR, n, n, LU, lda, ipiv) );
+	CHECK_GETRF_ERROR( lapack_getrf_cpu(LAPACK_COL_MAJOR, n, n, LU, lda, ipiv) );
 	MKL_TIMER_STOP(t_start, t_stop, t1);
 
 	printf("Stop mkl getrf...\nTime calc: %f (s.)\n", t1);
@@ -57,7 +57,7 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	MKL_TIMER_START(t_start);
 	// solve A*X = B
-	mkl_getrs(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, ipiv, x, ldx);
+	lapack_getrs_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, ipiv, x, ldx);
 	MKL_TIMER_STOP(t_start, t_stop, t2);
 
 	printf("Stop mkl getrs...\nTime calc: %f (s.)\n", t2);
@@ -66,21 +66,21 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	FLOAT *Ax_b = nullptr;
 	MKL_FLOAT_ALLOCATOR(Ax_b, ldx*nrhs);
-	mkl_copy(n, b, 1, Ax_b, 1);
+	blas_copy_cpu(n, b, 1, Ax_b, 1);
 
 	printf("Start mkl gemv...\n");
 
 	MKL_TIMER_START(t_start);
-	mkl_gemv(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
+	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
 	MKL_TIMER_STOP(t_start, t_stop, t3);
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_time.log", n, t3);
 
-	const FLOAT nrm_b = mkl_nrm2(n, b, 1);
+	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
 
-	const FLOAT residual = mkl_nrm2(n, Ax_b, 1);
+	const FLOAT residual = blas_nrm2_cpu(n, Ax_b, 1);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
 	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
@@ -129,8 +129,8 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	CUDA_FLOAT_ALLOCATOR(d_x, ldx*nrhs);
 	CUDA_TIMER_STOP( t_start, t_stop, 0, t_tmp );
 	t5 += t_tmp;
-	CUBLAS_CALL( cuda_copy(handle2, n*lda, d_A, 1, d_LU, 1) );
-	CUBLAS_CALL( cuda_copy(handle2, n, d_b, 1, d_x, 1) );
+	CUBLAS_CALL( blas_copy_gpu(handle2, n*lda, d_A, 1, d_LU, 1) );
+	CUBLAS_CALL( blas_copy_gpu(handle2, n, d_b, 1, d_x, 1) );
 
 	int32_t bufferSize = 0;
 	int32_t *d_info = nullptr, h_info = 0;
@@ -143,7 +143,7 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	printf("\nStart cuda getrf_bufferSize...\n");
 
 	CUDA_TIMER_START( t_start, stream1 );
-	CUSOLVER_CALL( cuda_getrf_bufferSize(handle1, n, n, d_LU, lda, bufferSize) );
+	CUSOLVER_CALL( lapack_getrf_bufferSize_gpu(handle1, n, n, d_LU, lda, bufferSize) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream1, t4 );
 
 	printf("Stop cuda getrf_bufferSize...\nTime calc: %f (s.)\n", t4);
@@ -159,7 +159,7 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	printf("Start cuda getrf...\n");
 
 	CUDA_TIMER_START( t_start, stream1 );
-	CUSOLVER_CALL( cuda_getrf(handle1, n, n, d_LU, lda, buffer, d_ipiv, d_info) );
+	CUSOLVER_CALL( lapack_getrf_gpu(handle1, n, n, d_LU, lda, buffer, d_ipiv, d_info) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream1, t1 );
 
 	printf("Stop cuda getrf...\nTime calc: %f (s.)\n", t1);
@@ -171,7 +171,7 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	printf("Start cuda getrs...\n");
 
 	CUDA_TIMER_START( t_start, stream1 );
-	CUSOLVER_CALL( cuda_getrs(handle1, CUBLAS_OP_N, n, nrhs, d_LU, lda, d_ipiv, d_x, ldx, d_info) );
+	CUSOLVER_CALL( lapack_getrs_gpu(handle1, CUBLAS_OP_N, n, nrhs, d_LU, lda, d_ipiv, d_x, ldx, d_info) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream1, t2 );
 
 	printf("Stop cuda getrs...\nTime calc: %f (s.)\n", t2);
@@ -180,25 +180,25 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	FLOAT *d_Ax_b = nullptr;
 	CUDA_FLOAT_ALLOCATOR(d_Ax_b, n);
-	CUBLAS_CALL( cuda_copy(handle2, n, d_b, 1, d_Ax_b, 1) );
+	CUBLAS_CALL( blas_copy_gpu(handle2, n, d_b, 1, d_Ax_b, 1) );
 	const FLOAT alpha = 1.0;
 	const FLOAT beta = -1.0;	
 
 	printf("Start cuda gemv...\n");
 
 	CUDA_TIMER_START( t_start, stream2 );
-	CUBLAS_CALL( cuda_gemv(handle2, CUBLAS_OP_N, n, n, alpha, d_A, lda, d_x, 1, beta, d_Ax_b, 1) );
+	CUBLAS_CALL( blas_gemv_gpu(handle2, CUBLAS_OP_N, n, n, alpha, d_A, lda, d_x, 1, beta, d_Ax_b, 1) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream2, t3 );
 
 	printf("Stop cuda gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("cuda_gemv_time.log", n, t3);
 
 	FLOAT nrm_b = 0.0;
-	cuda_nrm2(handle2, n, d_b, 1, nrm_b);
+	blas_nrm2_gpu(handle2, n, d_b, 1, nrm_b);
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
 
 	FLOAT residual = 0.0;
-	cuda_nrm2(handle2, n, d_Ax_b, 1, residual);
+	blas_nrm2_gpu(handle2, n, d_Ax_b, 1, residual);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
 	print_to_file_residual("cuda_abs_residual.log", n, abs_residual);
