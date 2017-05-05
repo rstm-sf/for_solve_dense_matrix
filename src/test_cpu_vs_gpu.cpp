@@ -119,7 +119,7 @@ int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	MKL_TIMER_START(t_start);
 	// solve A*X = B
-	lapack_getrsvnpi_cpu(CblasColMajor, CblasNoTrans, n, LU, lda, x, 1);
+	lapack_getrsvnpi_cpu(LAPACK_COL_MAJOR, 'N', n, LU, lda, x, 1);
 	MKL_TIMER_STOP(t_start, t_stop, t2);
 
 	printf("Stop mkl getrsv_npi...\nTime calc: %f (s.)\n", t2);

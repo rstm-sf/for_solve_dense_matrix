@@ -32,11 +32,29 @@ void print_version_mkl() {
 	printf("\n%s\n\n", buf);
 }
 
-int32_t lapack_getrsvnpi_cpu(const CBLAS_LAYOUT layout, const CBLAS_TRANSPOSE trans, const int32_t n,
-                             const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t incb) {
+int32_t lapack_getrsvnpi_cpu(const int32_t layout, const char trans, const int32_t n,
+                             const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t ldb) {
+	bool notran;
+	CBLAS_TRANSPOSE trans_;
+	if (trans == 'N') {
+		notran = true;
+		trans_ = CblasNoTrans;
+	} else {
+		notran = false;
+		trans_ = (trans == 'T' ? CblasTrans : CblasConjTrans);
+	}
 
-	blas_trsv_cpu(layout, CblasLower, trans, CblasUnit, n, a, lda, b, incb);
-	blas_trsv_cpu(layout, CblasUpper, trans, CblasNonUnit, n, a, lda, b, incb);
+	CBLAS_LAYOUT layout_ = (layout == 102 ? CblasColMajor : CblasRowMajor);
+
+	if (notran) {
+		// Solve A*X=B
+		blas_trsv_cpu(layout_, CblasLower, trans_, CblasUnit, n, a, lda, b, 1);
+		blas_trsv_cpu(layout_, CblasUpper, trans_, CblasNonUnit, n, a, lda, b, 1);
+	} else {
+		// Solve A**T*X=B  or  A**H*X=B
+		blas_trsv_cpu(layout_, CblasUpper, trans_, CblasNonUnit, n, a, lda, b, 1);
+		blas_trsv_cpu(layout_, CblasLower, trans_, CblasUnit, n, a, lda, b, 1);
+	}
 
 	return 0;
 }
