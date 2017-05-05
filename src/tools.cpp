@@ -31,3 +31,12 @@ void print_version_mkl() {
 	mkl_get_version_string(buf, len);
 	printf("\n%s\n\n", buf);
 }
+
+int32_t lapack_getrsvnpi_cpu(const CBLAS_LAYOUT layout, const CBLAS_TRANSPOSE trans, const int32_t n,
+                             const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t incb) {
+
+	blas_trsv_cpu(layout, CblasLower, trans, CblasUnit, n, a, lda, b, incb);
+	blas_trsv_cpu(layout, CblasUpper, trans, CblasNonUnit, n, a, lda, b, incb);
+
+	return 0;
+}

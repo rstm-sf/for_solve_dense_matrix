@@ -19,13 +19,16 @@ int32_t main(int32_t argc, char** argv) {
 
 	switch (id_test) {
 	case 1: // mkl and cuda solve
-		test_solve(n, true, true); break;
+		test_solve(n, true, false, true); break;
 
 	case 2: // mkl solve
-		test_solve(n, true, false); break;
+		test_solve(n, true, false, false); break;
 
-	case 3: // cuda solve
-		test_solve(n, false, true); break;
+	case 3: // mkl solve_npi
+		test_solve(n, false, true, false); break;
+
+	case 4: // cuda solve
+		test_solve(n, false, false, true); break;
 
 	default:
 		printf("There is no such id test.\n");

@@ -1,6 +1,7 @@
 #include "test_cpu_vs_gpu.h"
 
-int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_cuda_solve) {
+int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_mkl_solve_npi,
+	const bool is_cuda_solve) {
 	assert(("Error: n <= 0!", n > 0));
 	printf("Dim: %" PRId32 "\n", n);
 
@@ -19,6 +20,8 @@ int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_cuda_
 
 	if (is_mkl_solve)
 		mkl_solve(n, A, b);
+	if (is_mkl_solve_npi)
+		mkl_solve_npi(n, A, b);
 	if (is_cuda_solve)
 		cuda_solve(n, A, b);
 
@@ -88,6 +91,64 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	MKL_FREE(LU);
 	MKL_FREE(x);
 	MKL_FREE(ipiv);
+	MKL_FREE(Ax_b);
+}
+
+int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
+	const int32_t nfact = n;
+	int32_t lda = n;
+	FLOAT *x = nullptr;
+	MKL_FLOAT_ALLOCATOR(x, n);
+	blas_copy_cpu(n, b, 1, x, 1);
+	FLOAT *LU = nullptr;
+	MKL_FLOAT_ALLOCATOR(LU, n*lda);
+	blas_copy_cpu(n*lda, A, 1, LU, 1);
+
+	printf("\nStart mkl getrf_npi...\n");
+	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
+	double t_start = 0.0, t_stop = 0.0;
+
+	MKL_TIMER_START(t_start);
+	// A = P*L*U
+	CHECK_GETRF_ERROR( lapack_getrfnpi_cpu(LAPACK_COL_MAJOR, n, n, nfact, LU, lda) );
+	MKL_TIMER_STOP(t_start, t_stop, t1);
+
+	printf("Stop mkl getrf_npi...\nTime calc: %f (s.)\n", t1);
+	print_to_file_time("mkl_getrf_npi_time.log", n, t1);
+	printf("Start mkl getrsv_npi...\n");
+
+	MKL_TIMER_START(t_start);
+	// solve A*X = B
+	lapack_getrsvnpi_cpu(CblasColMajor, CblasNoTrans, n, LU, lda, x, 1);
+	MKL_TIMER_STOP(t_start, t_stop, t2);
+
+	printf("Stop mkl getrsv_npi...\nTime calc: %f (s.)\n", t2);
+	printf("Time calc mkl getrf+getrsv_npi: %f (s.)\n", t1+t2);
+	print_to_file_time("mkl_getrsv_npi_time.log", n, t2);
+
+	FLOAT *Ax_b = nullptr;
+	MKL_FLOAT_ALLOCATOR(Ax_b, n);
+	blas_copy_cpu(n, b, 1, Ax_b, 1);
+
+	printf("Start mkl gemv...\n");
+
+	MKL_TIMER_START(t_start);
+	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
+	MKL_TIMER_STOP(t_start, t_stop, t3);
+
+	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
+	print_to_file_time("mkl_gemv_time.log", n, t3);
+
+	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
+	assert(("norm(b) <= 0!", nrm_b > 0.0));
+
+	const FLOAT residual = blas_nrm2_cpu(n, Ax_b, 1);
+	const FLOAT abs_residual = residual / nrm_b;
+	printf("Absolute residual: %e\n\n", abs_residual);
+	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
+
+	MKL_FREE(LU);
+	MKL_FREE(x);
 	MKL_FREE(Ax_b);
 }
 
