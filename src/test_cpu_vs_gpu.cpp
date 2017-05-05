@@ -96,7 +96,7 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	int32_t lda = n;
 	int32_t ldx = n;
 
-	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f, t4 = 0.0f, t5 = 0.0f, t_tmp = 0.0f;
+	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f, t4 = 0.0f, t5 = 0.0f;
 	cudaEvent_t t_start, t_stop;
 	CUDA_SAFE_CALL( cudaEventCreate(&t_start) );
 	CUDA_SAFE_CALL( cudaEventCreate(&t_stop) );
@@ -109,6 +109,8 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	CUDA_SAFE_CALL( cudaMemcpy(d_A, A, sizeof(FLOAT)*n*lda, cudaMemcpyHostToDevice) );
 	CUDA_SAFE_CALL( cudaMemcpy(d_b, b, sizeof(FLOAT)*nrhs*ldx, cudaMemcpyHostToDevice) );
 	CUDA_TIMER_STOP( t_start, t_stop, 0, t5 );
+	printf("\nOverhead A, b time: %f (s.)\n", t5);
+	print_to_file_time("cuda_overhead_A_b_time.log", n, t5);
 
 	cusolverDnHandle_t handle1 = nullptr;
 	cudaStream_t stream1 = nullptr;
@@ -124,11 +126,8 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_x = nullptr;
-	CUDA_TIMER_START( t_start, 0 );
 	CUDA_FLOAT_ALLOCATOR(d_LU, n*lda);
 	CUDA_FLOAT_ALLOCATOR(d_x, ldx*nrhs);
-	CUDA_TIMER_STOP( t_start, t_stop, 0, t_tmp );
-	t5 += t_tmp;
 	CUBLAS_CALL( blas_copy_gpu(handle2, n*lda, d_A, 1, d_LU, 1) );
 	CUBLAS_CALL( blas_copy_gpu(handle2, n, d_b, 1, d_x, 1) );
 
@@ -140,22 +139,16 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	int32_t *d_ipiv = nullptr;
 	CUDA_INT32_ALLOCATOR(d_ipiv, n);
 
-	printf("\nStart cuda getrf_bufferSize...\n");
+	printf("Start cuda getrf_bufferSize...\n");
 
 	CUDA_TIMER_START( t_start, stream1 );
 	CUSOLVER_CALL( lapack_getrf_bufferSize_gpu(handle1, n, n, d_LU, lda, bufferSize) );
+	CUDA_FLOAT_ALLOCATOR(buffer, bufferSize);
 	CUDA_TIMER_STOP( t_start, t_stop, stream1, t4 );
 
-	printf("Stop cuda getrf_bufferSize...\nTime calc: %f (s.)\n", t4);
-	print_to_file_time("cuda_getrf_bufferSize_time.log", n, t4);
+	printf("Stop cuda getrf_bufferSize +alloc_buffer...\nTime calc: %f (s.)\n", t4);
+	print_to_file_time("calc_size_allocbuffer_time.log", n, t4);
 
-	CUDA_TIMER_START( t_start, 0 );
-	CUDA_FLOAT_ALLOCATOR(buffer, bufferSize);
-	CUDA_TIMER_STOP( t_start, t_stop, 0, t_tmp );
-	t5 += t_tmp;
-
-	printf("Overhead time: %f (s.)\n", t5);
-	print_to_file_time("cuda_overhead_time.log", n, t5);
 	printf("Start cuda getrf...\n");
 
 	CUDA_TIMER_START( t_start, stream1 );
