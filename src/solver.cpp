@@ -1,49 +1,18 @@
-#include "test_cpu_vs_gpu.h"
+#include "solver.h"
 
-int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_mkl_solve_npi,
-	const bool is_cuda_solve) {
-	assert(("Error: n <= 0!", n > 0));
-	printf("Dim: %" PRId32 "\n", n);
+int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
+                                                       const FLOAT *b, const int32_t ldb) {
+	const int32_t sizeA = lda*n;
+	const int32_t sizeB = ldb*nrhs;
 
-	FLOAT *A = nullptr;
-	FLOAT *x_init = nullptr;
-	FLOAT *b = nullptr;
-	MKL_FLOAT_ALLOCATOR(A, n*n);
-	MKL_FLOAT_ALLOCATOR(x_init, n);
-	MKL_FLOAT_ALLOCATOR(b, n);
-	fill_matrix(A, n, n, 100.0);
-	fill_vector(x_init, n, 10.0);
-
-	// calculate b
-	const int32_t lda = n;
-	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x_init, 1, 0.0, b, 1);
-
-	if (is_mkl_solve)
-		mkl_solve(n, A, b);
-	if (is_mkl_solve_npi)
-		mkl_solve_npi(n, A, b);
-	if (is_cuda_solve)
-		cuda_solve(n, A, b);
-
-	MKL_FREE(A);
-	MKL_FREE(x_init);
-	MKL_FREE(b);
-
-	return 0;
-}
-
-int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
-	const int32_t nrhs = 1;
-	int32_t lda = n;
 	int32_t *ipiv = nullptr;
+	FLOAT *x      = nullptr;
+	FLOAT *LU     = nullptr;
 	MKL_INT32_ALLOCATOR(ipiv, n);
-	int32_t ldx = n;
-	FLOAT *x = nullptr;
-	MKL_FLOAT_ALLOCATOR(x, ldx*nrhs);
-	blas_copy_cpu(n, b, 1, x, 1);
-	FLOAT *LU = nullptr;
-	MKL_FLOAT_ALLOCATOR(LU, n*lda);
-	blas_copy_cpu(n*lda, A, 1, LU, 1);
+	MKL_FLOAT_ALLOCATOR(x, sizeB);
+	MKL_FLOAT_ALLOCATOR(LU, sizeA);
+	blas_copy_cpu(sizeB, b, 1, x, 1);
+	blas_copy_cpu(sizeA, A, 1, LU, 1);
 
 	printf("\nStart mkl getrf...\n");
 	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
@@ -60,7 +29,7 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	MKL_TIMER_START(t_start);
 	// solve A*X = B
-	lapack_getrs_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, ipiv, x, ldx);
+	lapack_getrs_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, ipiv, x, ldb);
 	MKL_TIMER_STOP(t_start, t_stop, t2);
 
 	printf("Stop mkl getrs...\nTime calc: %f (s.)\n", t2);
@@ -68,22 +37,23 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	print_to_file_time("mkl_getrs_time.log", n, t2);
 
 	FLOAT *Ax_b = nullptr;
-	MKL_FLOAT_ALLOCATOR(Ax_b, ldx*nrhs);
-	blas_copy_cpu(n, b, 1, Ax_b, 1);
+	MKL_FLOAT_ALLOCATOR(Ax_b, ldb);
+	blas_copy_cpu(ldb, b, 1, Ax_b, 1);
 
 	printf("Start mkl gemv...\n");
 
 	MKL_TIMER_START(t_start);
+	// calculate A*x - b
 	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
 	MKL_TIMER_STOP(t_start, t_stop, t3);
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_time.log", n, t3);
 
-	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
+	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
 
-	const FLOAT residual = blas_nrm2_cpu(n, Ax_b, 1);
+	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
 	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
@@ -94,17 +64,20 @@ int32_t mkl_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	MKL_FREE(Ax_b);
 }
 
-int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
-	const int32_t nrhs = 1;
+int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
+                                                           const FLOAT *b, const int32_t ldb) {
+	const int32_t sizeA = lda*n;
+	const int32_t sizeB = ldb*nrhs;
 	const int32_t nfact = n;
-	int32_t lda = n;
-	int32_t ldx = 1;
-	FLOAT *x = nullptr;
-	MKL_FLOAT_ALLOCATOR(x, n);
-	blas_copy_cpu(n, b, 1, x, 1);
-	FLOAT *LU = nullptr;
-	MKL_FLOAT_ALLOCATOR(LU, n*lda);
-	blas_copy_cpu(n*lda, A, 1, LU, 1);
+
+	int32_t *ipiv = nullptr;
+	FLOAT *x      = nullptr;
+	FLOAT *LU     = nullptr;
+	MKL_INT32_ALLOCATOR(ipiv, n);
+	MKL_FLOAT_ALLOCATOR(x, sizeB);
+	MKL_FLOAT_ALLOCATOR(LU, sizeA);
+	blas_copy_cpu(sizeB, b, 1, x, 1);
+	blas_copy_cpu(sizeA, A, 1, LU, 1);
 
 	printf("\nStart mkl getrf_npi...\n");
 	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
@@ -121,7 +94,7 @@ int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	MKL_TIMER_START(t_start);
 	// solve A*X = B
-	lapack_getrsnpi_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, x, ldx);
+	lapack_getrsnpi_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, x, ldb);
 	MKL_TIMER_STOP(t_start, t_stop, t2);
 
 	printf("Stop mkl getrsv_npi...\nTime calc: %f (s.)\n", t2);
@@ -129,22 +102,23 @@ int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	print_to_file_time("mkl_getrsv_npi_time.log", n, t2);
 
 	FLOAT *Ax_b = nullptr;
-	MKL_FLOAT_ALLOCATOR(Ax_b, n);
-	blas_copy_cpu(n, b, 1, Ax_b, 1);
+	MKL_FLOAT_ALLOCATOR(Ax_b, ldb);
+	blas_copy_cpu(ldb, b, 1, Ax_b, 1);
 
 	printf("Start mkl gemv...\n");
 
 	MKL_TIMER_START(t_start);
+	// calculate A*x - b
 	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
 	MKL_TIMER_STOP(t_start, t_stop, t3);
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_time.log", n, t3);
 
-	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
+	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
 
-	const FLOAT residual = blas_nrm2_cpu(n, Ax_b, 1);
+	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
 	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
@@ -154,10 +128,11 @@ int32_t mkl_solve_npi(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	MKL_FREE(Ax_b);
 }
 
-int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
-	const int32_t nrhs = 1;
-	int32_t lda = n;
-	int32_t ldx = n;
+int32_t cudatoolkit_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
+                                                               const FLOAT *b, const int32_t ldb) {
+	const int32_t sizeA = lda*n;
+	const int32_t sizeB = ldb*nrhs;
+	const int32_t nfact = n;
 
 	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f, t4 = 0.0f, t5 = 0.0f;
 	cudaEvent_t t_start, t_stop;
@@ -167,10 +142,10 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	FLOAT *d_A = nullptr;
 	FLOAT *d_b = nullptr;
 	CUDA_TIMER_START( t_start, 0 );
-	CUDA_FLOAT_ALLOCATOR(d_A, lda*n);
-	CUDA_FLOAT_ALLOCATOR(d_b, ldx*nrhs);
-	CUDA_SAFE_CALL( cudaMemcpy(d_A, A, sizeof(FLOAT)*n*lda, cudaMemcpyHostToDevice) );
-	CUDA_SAFE_CALL( cudaMemcpy(d_b, b, sizeof(FLOAT)*nrhs*ldx, cudaMemcpyHostToDevice) );
+	CUDA_FLOAT_ALLOCATOR(d_A, sizeA);
+	CUDA_FLOAT_ALLOCATOR(d_b, sizeB);
+	CUDA_SAFE_CALL( cudaMemcpy(d_A, A, sizeof(FLOAT)*sizeA, cudaMemcpyHostToDevice) );
+	CUDA_SAFE_CALL( cudaMemcpy(d_b, b, sizeof(FLOAT)*sizeB, cudaMemcpyHostToDevice) );
 	CUDA_TIMER_STOP( t_start, t_stop, 0, t5 );
 	printf("\nOverhead A, b time: %f (s.)\n", t5);
 	print_to_file_time("cuda_overhead_A_b_time.log", n, t5);
@@ -189,10 +164,10 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_x = nullptr;
-	CUDA_FLOAT_ALLOCATOR(d_LU, n*lda);
-	CUDA_FLOAT_ALLOCATOR(d_x, ldx*nrhs);
-	CUBLAS_CALL( blas_copy_gpu(handle2, n*lda, d_A, 1, d_LU, 1) );
-	CUBLAS_CALL( blas_copy_gpu(handle2, n, d_b, 1, d_x, 1) );
+	CUDA_FLOAT_ALLOCATOR(d_LU, sizeA);
+	CUDA_FLOAT_ALLOCATOR(d_x, sizeB);
+	CUBLAS_CALL( blas_copy_gpu(handle2, sizeA, d_A, 1, d_LU, 1) );
+	CUBLAS_CALL( blas_copy_gpu(handle2, sizeB, d_b, 1, d_x, 1) );
 
 	int32_t bufferSize = 0;
 	int32_t *d_info = nullptr, h_info = 0;
@@ -227,7 +202,7 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	printf("Start cuda getrs...\n");
 
 	CUDA_TIMER_START( t_start, stream1 );
-	CUSOLVER_CALL( lapack_getrs_gpu(handle1, CUBLAS_OP_N, n, nrhs, d_LU, lda, d_ipiv, d_x, ldx, d_info) );
+	CUSOLVER_CALL( lapack_getrs_gpu(handle1, CUBLAS_OP_N, n, nrhs, d_LU, lda, d_ipiv, d_x, ldb, d_info) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream1, t2 );
 
 	printf("Stop cuda getrs...\nTime calc: %f (s.)\n", t2);
@@ -235,14 +210,15 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	print_to_file_time("cuda_getrs_time.log", n, t2);
 
 	FLOAT *d_Ax_b = nullptr;
-	CUDA_FLOAT_ALLOCATOR(d_Ax_b, n);
-	CUBLAS_CALL( blas_copy_gpu(handle2, n, d_b, 1, d_Ax_b, 1) );
+	CUDA_FLOAT_ALLOCATOR(d_Ax_b, ldb);
+	CUBLAS_CALL( blas_copy_gpu(handle2, ldb, d_b, 1, d_Ax_b, 1) );
 	const FLOAT alpha = 1.0;
 	const FLOAT beta = -1.0;	
 
 	printf("Start cuda gemv...\n");
 
 	CUDA_TIMER_START( t_start, stream2 );
+	// calculate A*x - b
 	CUBLAS_CALL( blas_gemv_gpu(handle2, CUBLAS_OP_N, n, n, alpha, d_A, lda, d_x, 1, beta, d_Ax_b, 1) );
 	CUDA_TIMER_STOP( t_start, t_stop, stream2, t3 );
 
@@ -250,11 +226,11 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	print_to_file_time("cuda_gemv_time.log", n, t3);
 
 	FLOAT nrm_b = 0.0;
-	blas_nrm2_gpu(handle2, n, d_b, 1, nrm_b);
+	blas_nrm2_gpu(handle2, ldb, d_b, 1, nrm_b);
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
 
 	FLOAT residual = 0.0;
-	blas_nrm2_gpu(handle2, n, d_Ax_b, 1, residual);
+	blas_nrm2_gpu(handle2, ldb, d_Ax_b, 1, residual);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
 	print_to_file_residual("cuda_abs_residual.log", n, abs_residual);
@@ -273,4 +249,47 @@ int32_t cuda_solve(const int32_t n, const FLOAT *A, const FLOAT *b) {
 	CUDA_FREE( d_x    );
 	CUDA_FREE( d_Ax_b );
 	CUDA_FREE( d_b    );
+}
+
+int32_t lapack_getrsnpi_cpu(const int32_t layout, const char trans, const int32_t n,
+               const int32_t nrhs, const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t ldb) {
+	bool notran;
+	CBLAS_TRANSPOSE trans_;
+	if (trans == 'N') {
+		notran = true;
+		trans_ = CblasNoTrans;
+	} else {
+		notran = false;
+		trans_ = (trans == 'T' ? CblasTrans : CblasConjTrans);
+	}
+
+	CBLAS_LAYOUT layout_ = (layout == 102 ? CblasColMajor : CblasRowMajor);
+	const FLOAT alpha = 1.0;
+
+	if (notran) {
+		// Solve A*X=B
+		if (nrhs == 1) {
+			blas_trsv_cpu(layout_, CblasLower, trans_, CblasUnit, n, a, lda, b, 1);
+			blas_trsv_cpu(layout_, CblasUpper, trans_, CblasNonUnit, n, a, lda, b, 1);
+		} else {
+			blas_trsm_cpu(layout_, CblasLeft, CblasLower, trans_, CblasUnit, n, nrhs,
+			                                                                 alpha, a, lda, b, ldb);
+			blas_trsm_cpu(layout_, CblasLeft, CblasUpper, trans_, CblasNonUnit, n, nrhs,
+			                                                                 alpha, a, lda, b, ldb);
+		}
+		
+	} else {
+		// Solve A**T*X=B  or  A**H*X=B
+		if (nrhs == 1) {
+			blas_trsv_cpu(layout_, CblasUpper, trans_, CblasNonUnit, n, a, lda, b, 1);
+			blas_trsv_cpu(layout_, CblasLower, trans_, CblasUnit, n, a, lda, b, 1);
+		} else {
+			blas_trsm_cpu(layout_, CblasLeft, CblasUpper, trans_, CblasNonUnit, n, nrhs,
+			                                                                 alpha, a, lda, b, ldb);
+			blas_trsm_cpu(layout_, CblasLeft, CblasLower, trans_, CblasUnit, n, nrhs,
+			                                                                 alpha, a, lda, b, ldb);
+		}
+	}
+
+	return 0;
 }
