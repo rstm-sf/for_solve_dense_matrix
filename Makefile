@@ -13,7 +13,7 @@ RESULT_DIR   = .
 RESULT_DIR_D = $(RESULT_DIR)
 ####################################################################################################
 # Not profiling
-OPTIMAZE_COMMON = -O3
+OPTIMAZE_COMMON = -fast
 OPTIMAZE_DEBUG  = -O0
 ####################################################################################################
 # Processor specific optimization
@@ -41,7 +41,8 @@ CFLAGS_D = -c -g -G -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE_D)" #-DIS_DO
 # Linker flags
 #-mkl:sequential for sequential version
 #-mkl:parallel for parallel version
-LDFLAGS   = -ccbin=$(CC) -Xcompiler "-mkl:parallel $(OPTIMAZE_SPECIFIC)"
+LDFLAGS   = -ccbin=$(CC)                                                                    \
+            -Xcompiler "-mkl:parallel $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++"
 LDFLAGS_D = $(LDFLAGS)
 ####################################################################################################
 # Linker additional libraries
