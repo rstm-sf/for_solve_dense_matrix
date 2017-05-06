@@ -9,11 +9,11 @@
 
 #define MKL_FLOAT_ALLOCATOR(PTR, N)                                                                \
     (PTR) = (FLOAT *)mkl_malloc((N) * sizeof(FLOAT), FLOAT_ALIGNMENT);                             \
-    assert(("Error: not enought memory!", (PTR) != nullptr));
+    assert(("Error: not enought memory!", (PTR) != nullptr))
 
 #define MKL_INT32_ALLOCATOR(PTR, N)                                                                \
     (PTR) = (int32_t *)mkl_malloc((N) * sizeof(int32_t), 32);                                      \
-    assert(("Error: not enought memory!", (PTR) != nullptr));
+    assert(("Error: not enought memory!", (PTR) != nullptr))
 
 #define MKL_TIMER_START(eventStart)                                                                \
     eventStart = omp_get_wtime()
@@ -27,10 +27,10 @@
         CUDA_SAFE_CALL( cudaFree(PTR) )
 
 #define CUDA_FLOAT_ALLOCATOR(PTR, N)                                                               \
-    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
+    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) )
 
 #define CUDA_INT32_ALLOCATOR(PTR, N)                                                               \
-    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
+    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(int32_t)*(N)) )
 
 #define CUDA_TIMER_START(eventStart, stream)                                                       \
     CUDA_SAFE_CALL( cudaEventRecord((eventStart), (stream)) )
