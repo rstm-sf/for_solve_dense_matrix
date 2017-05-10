@@ -4,6 +4,11 @@ NAME   = test.exe
 # Result name for debuag version
 NAME_D = test_d.exe
 ####################################################################################################
+# define library directories
+MAGMADIR =
+CUDADIR  =
+MKLROOT  =
+####################################################################################################
 # Directory layout
 SRC_DIR      = src
 INCLUDE_DIR  = include
@@ -12,51 +17,48 @@ BUILD_DIR_D  = build_d
 RESULT_DIR   = .
 RESULT_DIR_D = $(RESULT_DIR)
 ####################################################################################################
-# Not profiling
-OPTIMAZE_COMMON = -fast
-OPTIMAZE_DEBUG  = -O0
-####################################################################################################
-# Processor specific optimization
-OPTIMAZE_SPECIFIC =  -std=c++11 -qopenmp
-####################################################################################################
-# Optimization options
-OPTIMAZE   = -pipe $(OPTIMAZE_SPECIFIC) $(OPTIMAZE_COMMON)
-OPTIMAZE_D = -pipe $(OPTIMAZE_SPECIFIC) $(OPTIMAZE_DEBUG)
-####################################################################################################
 # Compiler
-CC    = icpc
-DEVCC = nvcc
+CXX   = icpc
+NVCC  = nvcc
 ####################################################################################################
 # Linker
-LINK = $(DEVCC)
+LD = $(CXX)
 ####################################################################################################
-# gencode
-ARCH = -gencode arch=compute_50,code=sm_50
+OPTIMAZE_SPECIFIC = -std=c++11 -qopenmp
+OPTIMAZE          = $(OPTIMAZE_SPECIFIC) -fast
+OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
 # -DIS_DOUBLE use double precision
-CFLAGS   = -c -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE)" #-DIS_DOUBLE
-CFLAGS_D = -c -g -G -I$(INCLUDE_DIR) $(ARCH) -Xcompiler "$(OPTIMAZE_D)" #-DIS_DOUBLE
+CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE              \
+           -I$(MAGMADIR)/include -DADD_              \
+           -I$(CUDADIR)/include -I$(MKLROOT)/include
+
+CXXFLAGS   = -Wall -MMD -pipe $(OPTIMAZE)
+CXXFLAGS_D = -Wall -MMD -pipe $(OPTIMAZE_D)
+
+#NV_SM        = -gencode arch=compute_50,code=sm_50
+#NV_COMP      = -gencode arch=compute_50,code=compute_50
+#NVCCFLAGS    = $(NV_SM) $(NV_COMP) -Wno-deprecated-gpu-targets -ccbin=$(CXX)
+#NVCCFLAGS_D := $(NVCCFLAGS) -G -O0 -Xcompiler "$(CXXFLAGS_D)"
+#NVCCFLAGS   += -O3 -Xcompiler "$(CXXFLAGS)"
 ####################################################################################################
 # Linker flags
-#-mkl:sequential for sequential version
-#-mkl:parallel for parallel version
-LDFLAGS   = -ccbin=$(CC)                                                                    \
-            -Xcompiler "-mkl:parallel $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++"
+LDFLAGS   = -Wall $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++
 LDFLAGS_D = $(LDFLAGS)
 ####################################################################################################
 # Linker additional libraries
-LIB  = -lm
-#LIB += -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++
-LIB += -lcublas -lcusparse -lcusolver -lcudart -lcudadevrt
+LIBS  = -L$(MKLROOT)/lib -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++ -lm
+LIBS += -L$(CUDADIR)/lib64 -lcublas -lcusparse -lcusolver -lcudart -lcudadevrt
+LIBS += -L$(MAGMADIR)/lib -lmagma
 ####################################################################################################
 RESULT     = $(RESULT_DIR)/$(NAME)
 RESULT_D   = $(RESULT_DIR_D)/$(NAME_D)
 
-OBJS       = \
-              $(BUILD_DIR)/tools.o  \
-              $(BUILD_DIR)/solver.o \
-              $(BUILD_DIR)/main.o
+OBJS       = $(BUILD_DIR)/tools.o        \
+             $(BUILD_DIR)/mkl_solver.o   \
+             $(BUILD_DIR)/cu_solver.o    \
+             $(BUILD_DIR)/main.o
 
 OBJS_D     = $(subst $(BUILD_DIR)/, $(BUILD_DIR_D)/, $(OBJS))
 DEPFILES   = $(subst .o,.d,$(OBJS))
@@ -76,17 +78,17 @@ clean_d:
 debug: $(RESULT_D)
 
 release: $(RESULT)
+####################################################################################################
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+$(BUILD_DIR_D)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS_D) $(CPPFLAGS) -c -o $@ $<
 
 
 $(RESULT): $(OBJS)
-	$(LINK) $(LDFLAGS) $(OBJS) $(LIB) -o $(RESULT)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS) 
 
 $(RESULT_D): $(OBJS_D)
-	$(LINK) $(LDFLAGS_D) $(OBJS_D) $(LIB) -o $(RESULT_D)
-####################################################################################################
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(DEVCC) $(CFLAGS) -ccbin=$(CC) $< -o $@
-
-$(BUILD_DIR_D)/%.o: $(SRC_DIR)/%.cpp
-	$(DEVCC) $(CFLAGS_D) -ccbin=$(CC) $< -o $@
+	$(LD) $(LDFLAGS_D) -o $@ $^ $(LIBS)
 ####################################################################################################

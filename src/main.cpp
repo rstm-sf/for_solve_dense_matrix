@@ -1,7 +1,8 @@
 /**************************************************************************************************/
 // matrix with column-major
 /**************************************************************************************************/
-#include "solver.h"
+#include "cu_solver.h"
+#include "mkl_solver.h"
 
 int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_mkl_solve_npi,
                                                                 const bool is_cuda_solve);
@@ -64,7 +65,7 @@ int32_t test_solve(const int32_t n, const bool is_mkl_solve, const bool is_mkl_s
 	if (is_mkl_solve_npi)
 		mkl_solve_npi(n, nrhs, A, lda, b, ldb);
 	if (is_cuda_solve)
-		cudatoolkit_solve(n, nrhs, A, lda, b, ldb);
+		cu_solve(n, nrhs, A, lda, b, ldb);
 
 	MKL_FREE(A);
 	MKL_FREE(x_init);

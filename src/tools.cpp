@@ -24,10 +24,3 @@ void print_to_file_residual(const char* fname, const int32_t n, const FLOAT resi
 	fprintf(pFile, "%" PRId32 "\t%e\n", n, residual);
 	fclose(pFile);
 }
-
-void print_version_mkl() {
-	const int32_t len = 198;
-	char buf[len];
-	mkl_get_version_string(buf, len);
-	printf("\n%s\n\n", buf);
-}

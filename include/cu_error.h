@@ -1,5 +1,5 @@
-#ifndef __CUDA_ERROR_H__
-#define __CUDA_ERROR_H__
+#ifndef __CU_ERROR_H__
+#define __CU_ERROR_H__
 
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
@@ -24,7 +24,7 @@
     cusolverStatus_t err = call;                                                                   \
     if( err != CUSOLVER_STATUS_SUCCESS ) {                                                         \
         fprintf(stderr, "cuSOLVER error in file '%s' in line %d: %s.\n",                           \
-            __FILE__,__LINE__, _cudaGetErrorEnum( err ));                                          \
+                __FILE__,__LINE__, _cudaGetErrorEnum( err ));                                      \
         cudaDeviceReset();                                                                         \
         exit(EXIT_FAILURE);                                                                        \
     }                                                                                              \
@@ -34,7 +34,7 @@
     cusparseStatus_t err = call;                                                                   \
     if( err != CUSPARSE_STATUS_SUCCESS ) {                                                         \
         fprintf(stderr, "cuSPARSE error in file '%s' in line %d: %s.\n",                           \
-            __FILE__,__LINE__, _cudaGetErrorEnum( err ));                                          \
+                __FILE__,__LINE__, _cudaGetErrorEnum( err ));                                      \
         cudaDeviceReset();                                                                         \
         exit(EXIT_FAILURE);                                                                        \
     }                                                                                              \
@@ -44,7 +44,7 @@
     cublasStatus_t err = call;                                                                     \
     if( err != CUBLAS_STATUS_SUCCESS ) {                                                           \
         fprintf(stderr, "cuBLAS error in file '%s' in line %d: %s.\n",                             \
-            __FILE__,__LINE__, _cudaGetErrorEnum ( err ));                                         \
+                __FILE__,__LINE__, _cudaGetErrorEnum ( err ));                                     \
         cudaDeviceReset();                                                                         \
         exit(EXIT_FAILURE);                                                                        \
     }                                                                                              \
@@ -146,4 +146,4 @@ static const char *_cudaGetErrorEnum(cublasStatus_t error) {
     return "<unknown>";
 }
 
-#endif
+#endif // __CU_ERROR_H__

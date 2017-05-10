@@ -10,15 +10,6 @@
 
 #include <vector>
 
-#include <mkl.h>
-#include "mkl_error.h"
-#include <omp.h>
-
-#include <cuda_runtime.h>
-#include "cuda_error.h"
-#include <cublas_v2.h>
-#include <cusolverDn.h>
-
 #ifdef IS_DOUBLE
 
 typedef double FLOAT;
@@ -93,4 +84,4 @@ typedef float FLOAT;
 
 #endif
 
-#endif
+#endif // __CONFIG_H__
