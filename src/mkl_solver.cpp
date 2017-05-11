@@ -121,7 +121,7 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 	MKL_TIMER_STOP( t3 );
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
-	print_to_file_time("mkl_gemv_time.log", n, t3);
+	print_to_file_time("mkl_gemv_npi_time.log", n, t3);
 
 	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
 	assert(("norm(b) <= 0!", nrm_b > 0.0));
@@ -129,7 +129,7 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
 	const FLOAT abs_residual = residual / nrm_b;
 	printf("Absolute residual: %e\n\n", abs_residual);
-	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
+	print_to_file_residual("mkl_abs_npi_residual.log", n, abs_residual);
 
 	MKL_FREE(LU);
 	MKL_FREE(x);

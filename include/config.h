@@ -41,6 +41,10 @@ typedef double FLOAT;
         magma_dgetrf_gpu(m, n, dA, ldda, ipiv, &info)
 #define magma_getrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, info)                            \
         magma_dgetrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, &info)
+#define magma_getrfnpi_gpu(m, n, dA, ldda, info)                                                   \
+        magma_dgetrf_nopiv_gpu(m, n, dA, ldda, &info)
+#define magma_getrsnpi_gpu(trans, n, nrhs, dA, ldda, dB, lddb, info)                               \
+        magma_dgetrs_nopiv_gpu(trans, n, nrhs, dA, ldda, dB, lddb, &info)
 #define magma_gemv_gpu(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)             \
         magma_dgemv(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)
 #define magma_copy_gpu(n, dx, incx, dy, incy, queue)                                               \
@@ -88,6 +92,10 @@ typedef float FLOAT;
         magma_sgetrf_gpu(m, n, dA, ldda, ipiv, &info)
 #define magma_getrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, info)                            \
         magma_sgetrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, &info)
+#define magma_getrfnpi_gpu(m, n, dA, ldda, info)                                                   \
+        magma_sgetrf_nopiv_gpu(m, n, dA, ldda, &info)
+#define magma_getrsnpi_gpu(trans, n, nrhs, dA, ldda, dB, lddb, info)                               \
+        magma_sgetrs_nopiv_gpu(trans, n, nrhs, dA, ldda, dB, lddb, &info)
 #define magma_gemv_gpu(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)             \
         magma_sgemv(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)
 #define magma_copy_gpu(n, dx, incx, dy, incy, queue)                                               \
