@@ -3,6 +3,17 @@
 
 #include "config.h"
 
+#include <sys/time.h>
+
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <cstdint>
+#include <cinttypes>
+#include <algorithm>
+
+#include <vector>
+
 #define CHECK_GETRF_ERROR( call ) {                                                                \
     int32_t info = call;                                                                           \
     if (info != 0) {                                                                               \
@@ -22,7 +33,9 @@ inline void fill_vector(FLOAT *vec, const int32_t n, const FLOAT max_gen_val) {
     fill_matrix(vec, 1, n, max_gen_val);
 }
 
-void print_to_file_time(const char* fname, const int32_t n, const float time);
+void print_to_file_time(const char* fname, const int32_t n, const double time);
 void print_to_file_residual(const char* fname, const int32_t n, const FLOAT residual);
+
+double get_wtime();
 
 #endif // __TOOLS_H__

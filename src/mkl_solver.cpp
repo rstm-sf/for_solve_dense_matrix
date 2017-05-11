@@ -22,22 +22,21 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 	blas_copy_cpu(sizeA, A, 1, LU, 1);
 
 	printf("\nStart mkl getrf...\n");
-	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
-	double t_start = 0.0, t_stop = 0.0;
+	double t1 = 0.0, t2 = 0.0, t3 = 0.0;
 
-	MKL_TIMER_START(t_start);
+	MKL_TIMER_START( t1 );
 	// A = P*L*U
 	CHECK_GETRF_ERROR( lapack_getrf_cpu(LAPACK_COL_MAJOR, n, n, LU, lda, ipiv) );
-	MKL_TIMER_STOP(t_start, t_stop, t1);
+	MKL_TIMER_STOP( t1 );
 
 	printf("Stop mkl getrf...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("mkl_getrf_time.log", n, t1);
 	printf("Start mkl getrs...\n");
 
-	MKL_TIMER_START(t_start);
+	MKL_TIMER_START( t2 );
 	// solve A*X = B
 	lapack_getrs_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, ipiv, x, ldb);
-	MKL_TIMER_STOP(t_start, t_stop, t2);
+	MKL_TIMER_STOP( t2 );
 
 	printf("Stop mkl getrs...\nTime calc: %f (s.)\n", t2);
 	printf("Time calc mkl getrf+getrs: %f (s.)\n", t1+t2);
@@ -49,10 +48,10 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 
 	printf("Start mkl gemv...\n");
 
-	MKL_TIMER_START(t_start);
+	MKL_TIMER_START( t3 );
 	// calculate A*x - b
 	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
-	MKL_TIMER_STOP(t_start, t_stop, t3);
+	MKL_TIMER_STOP( t3 );
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_time.log", n, t3);
@@ -92,19 +91,19 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
 	double t_start = 0.0, t_stop = 0.0;
 
-	MKL_TIMER_START(t_start);
+	MKL_TIMER_START( t1 );
 	// A = P*L*U
 	CHECK_GETRF_ERROR( lapack_getrfnpi_cpu(LAPACK_COL_MAJOR, n, n, nfact, LU, lda) );
-	MKL_TIMER_STOP(t_start, t_stop, t1);
+	MKL_TIMER_STOP( t1 );
 
 	printf("Stop mkl getrf_npi...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("mkl_getrf_npi_time.log", n, t1);
 	printf("Start mkl getrsv_npi...\n");
 
-	MKL_TIMER_START(t_start);
+	MKL_TIMER_START( t2 );
 	// solve A*X = B
 	lapack_getrsnpi_cpu(LAPACK_COL_MAJOR, 'N', n, nrhs, LU, lda, x, ldb);
-	MKL_TIMER_STOP(t_start, t_stop, t2);
+	MKL_TIMER_STOP( t2 );
 
 	printf("Stop mkl getrsv_npi...\nTime calc: %f (s.)\n", t2);
 	printf("Time calc mkl getrf+getrsv_npi: %f (s.)\n", t1+t2);
@@ -116,10 +115,10 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 
 	printf("Start mkl gemv...\n");
 
-	MKL_TIMER_START(t_start);
+	MKL_TIMER_START( t3 );
 	// calculate A*x - b
 	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x, 1, -1.0, Ax_b, 1);
-	MKL_TIMER_STOP(t_start, t_stop, t3);
+	MKL_TIMER_STOP( t3 );
 
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_time.log", n, t3);

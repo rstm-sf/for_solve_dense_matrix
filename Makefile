@@ -19,20 +19,21 @@ RESULT_DIR_D = $(RESULT_DIR)
 ####################################################################################################
 # Compiler
 CXX   = icpc
-NVCC  = nvcc
+#NVCC  = nvcc
 ####################################################################################################
 # Linker
 LD = $(CXX)
 ####################################################################################################
-OPTIMAZE_SPECIFIC = -std=c++11 -qopenmp
+OPTIMAZE_SPECIFIC = -std=c++11
 OPTIMAZE          = $(OPTIMAZE_SPECIFIC) -fast
 OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
 # -DIS_DOUBLE use double precision
-CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE              \
-           -I$(MAGMADIR)/include -DADD_              \
-           -I$(CUDADIR)/include -I$(MKLROOT)/include
+CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE  \
+           -I$(MAGMADIR)/include -DADD_  \
+           -I$(CUDADIR)/include          \
+           -I$(MKLROOT)/include
 
 CXXFLAGS   = -Wall -MMD -pipe $(OPTIMAZE)
 CXXFLAGS_D = -Wall -MMD -pipe $(OPTIMAZE_D)
@@ -44,23 +45,25 @@ CXXFLAGS_D = -Wall -MMD -pipe $(OPTIMAZE_D)
 #NVCCFLAGS   += -O3 -Xcompiler "$(CXXFLAGS)"
 ####################################################################################################
 # Linker flags
-LDFLAGS   = -Wall $(OPTIMAZE_SPECIFIC) -static-intel -static-libstdc++
+LDFLAGS   = -Wall $(OPTIMAZE_SPECIFIC) -qopenmp -static-intel -static-libstdc++
 LDFLAGS_D = $(LDFLAGS)
 ####################################################################################################
 # Linker additional libraries
 LIBS  = -L$(MKLROOT)/lib -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++ -lm
 LIBS += -L$(CUDADIR)/lib64 -lcublas -lcusparse -lcusolver -lcudart -lcudadevrt
+#LIBS += -L$(CUDADIR)/lib64 -lcublas_static -lculibos -lcusparse_static -lcusolver_static -lcudart_static -lcudadevrt
 LIBS += -L$(MAGMADIR)/lib -lmagma
 ####################################################################################################
 RESULT     = $(RESULT_DIR)/$(NAME)
 RESULT_D   = $(RESULT_DIR_D)/$(NAME_D)
 
-OBJS       = $(BUILD_DIR)/tools.o        \
-             $(BUILD_DIR)/mkl_solver.o   \
-             $(BUILD_DIR)/cu_solver.o    \
+OBJS       = $(BUILD_DIR)/tools.o          \
+			 $(BUILD_DIR)/magma_solver.o   \
+             $(BUILD_DIR)/mkl_solver.o     \
+             $(BUILD_DIR)/cu_solver.o      \
              $(BUILD_DIR)/main.o
 
-OBJS_D     = $(subst $(BUILD_DIR)/, $(BUILD_DIR_D)/, $(OBJS))
+OBJS_D     = $(subst $(BUILD_DIR)/,$(BUILD_DIR_D)/,$(OBJS))
 DEPFILES   = $(subst .o,.d,$(OBJS))
 DEPFILES_D = $(subst .o,.d,$(OBJS_D))
 ####################################################################################################

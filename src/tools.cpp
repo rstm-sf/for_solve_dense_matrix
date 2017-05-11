@@ -11,10 +11,10 @@ void fill_matrix(FLOAT *mat, const int32_t nrows, const int32_t ncols, const FLO
 	}
 }
 
-void print_to_file_time(const char* fname, const int32_t n, const float time) {
+void print_to_file_time(const char* fname, const int32_t n, const double time) {
 	FILE *pFile = fopen (fname, "a+");
 	assert(pFile != nullptr);
-	fprintf(pFile, "%" PRId32 "\t%f\n", n, time);
+	fprintf(pFile, "%" PRId32 "\t%.16f\n", n, time);
 	fclose(pFile);
 }
 
@@ -23,4 +23,10 @@ void print_to_file_residual(const char* fname, const int32_t n, const FLOAT resi
 	assert(pFile != nullptr);
 	fprintf(pFile, "%" PRId32 "\t%e\n", n, residual);
 	fclose(pFile);
+}
+
+double get_wtime() {
+	struct timeval t;
+	gettimeofday(&t, nullptr);
+	return t.tv_sec + t.tv_usec*1e-6;
 }

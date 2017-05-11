@@ -9,23 +9,21 @@
 #include <cusolverDn.h>
 
 #define CUDA_FREE(PTR)                                                                             \
-    if ((PTR) != nullptr)                                                                          \
-        CUDA_SAFE_CALL( cudaFree(PTR) )
+    CUDA_SAFE_CALL( cudaFree(PTR) )
 
 #define CUDA_FLOAT_ALLOCATOR(PTR, N)                                                               \
-    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
+    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) )
 
 #define CUDA_INT32_ALLOCATOR(PTR, N)                                                               \
-    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(FLOAT)*(N)) );
+    CUDA_SAFE_CALL( cudaMalloc((void **)&(PTR), sizeof(int32_t)*(N)) )
 
-#define CUDA_TIMER_START(eventStart, stream)                                                       \
-    CUDA_SAFE_CALL( cudaEventRecord((eventStart), (stream)) )
+#define CUDA_TIMER_START(time, stream)                                                             \
+    CUDA_SAFE_CALL( cudaStreamSynchronize(stream) );                                               \
+    time = get_wtime()
 
-#define CUDA_TIMER_STOP(eventStart, eventStop, stream, time)                                       \
-    CUDA_SAFE_CALL( cudaEventRecord((eventStop), (stream)) );                                      \
-    CUDA_SAFE_CALL( cudaEventSynchronize(eventStop) );                                             \
-    CUDA_SAFE_CALL( cudaEventElapsedTime(&(time), (eventStart), (eventStop)));                     \
-    (time) /= 1000
+#define CUDA_TIMER_STOP(time, stream)                                                              \
+    CUDA_SAFE_CALL( cudaStreamSynchronize(stream) );                                               \
+    time = get_wtime() - time
 
 int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
                                                       const FLOAT *b, const int32_t ldb);

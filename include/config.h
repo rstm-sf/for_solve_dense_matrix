@@ -1,15 +1,6 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include <cassert>
-#include <cstdio>
-#include <cstring>
-#include <cstdint>
-#include <cinttypes>
-#include <algorithm>
-
-#include <vector>
-
 #ifdef IS_DOUBLE
 
 typedef double FLOAT;
@@ -46,7 +37,18 @@ typedef double FLOAT;
 #define blas_nrm2_gpu(handle, n, x, incx, result)                                                  \
         cublasDnrm2(handle, n, x, incx, &result)
 
-#else
+#define magma_getrf_gpu(m, n, dA, ldda, ipiv, info)                                                \
+        magma_dgetrf_gpu(m, n, dA, ldda, ipiv, &info)
+#define magma_getrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, info)                            \
+        magma_dgetrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, &info)
+#define magma_gemv_gpu(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)             \
+        magma_dgemv(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)
+#define magma_copy_gpu(n, dx, incx, dy, incy, queue)                                               \
+        magma_dcopy(n, dx, incx, dy, incy, queue)
+#define magma_nrm2_gpu(n, dx, incx, queue)                                                         \
+        magma_dnrm2(n, dx, incx, queue)
+
+#else // no IS_DOUBLE
 
 typedef float FLOAT;
 
@@ -82,6 +84,17 @@ typedef float FLOAT;
 #define blas_nrm2_gpu(handle, n, x, incx, result)                                                  \
         cublasSnrm2(handle, n, x, incx, &result)
 
-#endif
+#define magma_getrf_gpu(m, n, dA, ldda, ipiv, info)                                                \
+        magma_sgetrf_gpu(m, n, dA, ldda, ipiv, &info)
+#define magma_getrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, info)                            \
+        magma_sgetrs_gpu(trans, n, nrhs, dA, ldda, ipiv, dB, lddb, &info)
+#define magma_gemv_gpu(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)             \
+        magma_sgemv(transA, m, n, alpha, dA, ldda, dx, incx, beta, dy, incy, queue)
+#define magma_copy_gpu(n, dx, incx, dy, incy, queue)                                               \
+        magma_scopy(n, dx, incx, dy, incy, queue)
+#define magma_nrm2_gpu(n, dx, incx, queue)                                                         \
+        magma_snrm2(n, dx, incx, queue)
+
+#endif // IS_DOUBLE
 
 #endif // __CONFIG_H__

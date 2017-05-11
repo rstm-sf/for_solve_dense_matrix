@@ -5,7 +5,6 @@
 
 #include <mkl.h>
 #include "mkl_error.h"
-#include <omp.h>
 
 #define MKL_FREE(PTR)                                                                              \
     if ((PTR) != nullptr)                                                                          \
@@ -19,12 +18,11 @@
     (PTR) = (int32_t *)mkl_malloc((N) * sizeof(int32_t), 32);                                      \
     assert(("Error: not enought memory!", (PTR) != nullptr))
 
-#define MKL_TIMER_START(eventStart)                                                                \
-    eventStart = omp_get_wtime()
+#define MKL_TIMER_START(time)                                                                      \
+    time = get_wtime()
 
-#define MKL_TIMER_STOP(eventStart, eventStop, time)                                                \
-    eventStop = omp_get_wtime();                                                                   \
-    time = (float)(eventStop - eventStart)
+#define MKL_TIMER_STOP(time)                                                                       \
+    time = get_wtime() - time
 
 void print_version_mkl();
 int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
