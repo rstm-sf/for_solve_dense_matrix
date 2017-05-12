@@ -57,13 +57,17 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 	print_to_file_time("mkl_gemv_time.log", n, t3);
 
 	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
-	assert(("norm(b) <= 0!", nrm_b > 0.0));
+	if (nrm_b <= 1e-24) {
+		printf("norm(b) <= 1e-20!\n");
+		goto cleanup;
+	}
 
 	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
-	const FLOAT abs_residual = residual / nrm_b;
-	printf("Absolute residual: %e\n\n", abs_residual);
-	print_to_file_residual("mkl_abs_residual.log", n, abs_residual);
+	const FLOAT relat_residual = residual / nrm_b;
+	printf("Relative residual: %e\n\n", relat_residual);
+	print_to_file_residual("mkl_relat_residual.log", n, relat_residual);
 
+cleanup:
 	MKL_FREE(LU);
 	MKL_FREE(x);
 	MKL_FREE(ipiv);
@@ -124,13 +128,17 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 	print_to_file_time("mkl_gemv_npi_time.log", n, t3);
 
 	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
-	assert(("norm(b) <= 0!", nrm_b > 0.0));
+	if (nrm_b <= 1e-24) {
+		printf("norm(b) <= 1e-20!\n");
+		goto cleanup;
+	}
 
 	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
-	const FLOAT abs_residual = residual / nrm_b;
-	printf("Absolute residual: %e\n\n", abs_residual);
-	print_to_file_residual("mkl_abs_npi_residual.log", n, abs_residual);
+	const FLOAT relat_residual = residual / nrm_b;
+	printf("Relative residual: %e\n\n", relat_residual);
+	print_to_file_residual("mkl_relat_npi_residual.log", n, relat_residual);
 
+cleanup:
 	MKL_FREE(LU);
 	MKL_FREE(x);
 	MKL_FREE(Ax_b);

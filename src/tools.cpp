@@ -1,13 +1,15 @@
 #include "tools.h"
 
-void fill_matrix(FLOAT *mat, const int32_t nrows, const int32_t ncols, const FLOAT max_gen_val) {
+void fill_matrix(const int32_t m, const int32_t n, FLOAT *a, const int32_t lda,
+                                                             const FLOAT max_gen_val) {
 	srand(0);
-	FLOAT *m = mat;
-	const FLOAT tmp = max_gen_val / (FLOAT)(RAND_MAX);
-	const int64_t n = nrows*ncols;
-	for (int64_t i = 0; i < n; ++i){
-		*(m) = (FLOAT)rand() * tmp;
-		m++;
+	const FLOAT r_max_gen_val = max_gen_val / (FLOAT)(RAND_MAX);
+	for (int32_t i = 0; i < n; ++i) {
+		FLOAT *a_ = a + i*lda;
+		for (int32_t j = 0; j < m; ++j) {
+			*(a_) = (FLOAT)rand() * r_max_gen_val;
+			a_++;
+		}
 	}
 }
 

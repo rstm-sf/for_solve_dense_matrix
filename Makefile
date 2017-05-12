@@ -51,7 +51,6 @@ LDFLAGS_D = $(LDFLAGS)
 # Linker additional libraries
 LIBS  = -L$(MKLROOT)/lib -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++ -lm
 LIBS += -L$(CUDADIR)/lib64 -lcublas -lcusparse -lcusolver -lcudart -lcudadevrt
-#LIBS += -L$(CUDADIR)/lib64 -lcublas_static -lculibos -lcusparse_static -lcusolver_static -lcudart_static -lcudadevrt
 LIBS += -L$(MAGMADIR)/lib -lmagma
 ####################################################################################################
 RESULT     = $(RESULT_DIR)/$(NAME)

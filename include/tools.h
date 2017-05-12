@@ -27,10 +27,13 @@
     }                                                                                              \
 }
 
-void fill_matrix(FLOAT *mat, const int32_t nrows, const int32_t ncols, const FLOAT max_gen_val);
+// Matrix Filling by Columns
+void fill_matrix(const int32_t m, const int32_t n, FLOAT *a, const int32_t lda,
+                                                             const FLOAT max_gen_val);
 
-inline void fill_vector(FLOAT *vec, const int32_t n, const FLOAT max_gen_val) {
-    fill_matrix(vec, 1, n, max_gen_val);
+inline void fill_vector(const int32_t n, const int32_t nrhs, FLOAT *x, const int32_t ldx,
+                                                                       const FLOAT max_gen_val) {
+    fill_matrix(n, nrhs, x, ldx, max_gen_val);
 }
 
 void print_to_file_time(const char* fname, const int32_t n, const double time);
