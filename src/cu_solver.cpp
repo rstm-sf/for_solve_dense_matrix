@@ -4,8 +4,6 @@ int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int3
                                                       const FLOAT *B, const int32_t ldb) {
 	const int32_t ldda   = CU_ROUNDUP_INT( lda, 32 );
 	const int32_t lddb   = ldda;
-	const int32_t sizedA = ldda*n;
-	const int32_t sizedB = lddb*nrhs;
 
 	cudaStream_t stream        = nullptr;
 	cusolverDnHandle_t handle1 = nullptr;
@@ -18,22 +16,22 @@ int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int3
 
 	FLOAT *d_A = nullptr;
 	FLOAT *d_B = nullptr;
-	CUDA_FLOAT_ALLOCATOR( d_A, sizedA );
-	CUDA_FLOAT_ALLOCATOR( d_B, sizedB );
+	CUDA_FLOAT_ALLOCATOR( d_A, ldda*n    );
+	CUDA_FLOAT_ALLOCATOR( d_B, lddb*nrhs );
 	CUBLAS_SETMATRIX(n, n, A, lda, d_A, ldda, stream);
 	CUBLAS_SETMATRIX(n, nrhs, B, ldb, d_B, lddb, stream);
 
-	FLOAT *d_LU     = nullptr;
-	FLOAT *d_X      = nullptr;
-	int32_t *d_ipiv = nullptr;
-	CUDA_FLOAT_ALLOCATOR(   d_LU, sizedA );
-	CUDA_FLOAT_ALLOCATOR(    d_X, sizedB );
-	CUDA_INT32_ALLOCATOR( d_ipiv, n      );
-	CUBLAS_CALL( blas_copy_gpu(handle2, sizedA, d_A, 1, d_LU, 1) );
-	CUBLAS_CALL( blas_copy_gpu(handle2, sizedB, d_B, 1, d_X, 1) );
+	FLOAT *d_LU = nullptr;
+	FLOAT *d_X  = nullptr;
+	CUDA_FLOAT_ALLOCATOR( d_LU,   ldda*n    );
+	CUDA_FLOAT_ALLOCATOR( d_X,    lddb*nrhs );
+	CUDA_COPYMATRIX(n, n, d_A, ldda, d_LU, ldda, stream);
+	CUDA_COPYMATRIX(n, nrhs, d_B, lddb, d_X, lddb, stream);
 
 	int32_t *d_info = nullptr;
+	int32_t *d_ipiv = nullptr;
 	CUDA_INT32_ALLOCATOR( d_info, 1 );
+	CUDA_INT32_ALLOCATOR( d_ipiv, n );
 	CUDA_SAFE_CALL( cudaMemset(d_info, 0, sizeof(int32_t)) );
 
 	double t1 = 0.0, t2 = 0.0, t3 = 0.0;

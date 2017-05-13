@@ -26,10 +26,13 @@
     MAGMA_CALL( magma_malloc_cpu((void **)&(PTR), sizeof(int32_t)*(N)) )
 
 #define MAGMA_SETMATRIX(m, n, hA_src, lda, dB_dst, lddb, queue)                                    \
-    magma_setmatrix(m, n, sizeof(FLOAT), hA_src, lda, dB_dst, lddb, queue);
+    magma_setmatrix(m, n, sizeof(FLOAT), hA_src, lda, dB_dst, lddb, queue)
 
 #define MAGMA_GETMATRIX(m, n, dA_src, ldda, hB_dst, ldb, queue)                                    \
-    magma_getmatrix(m, n, sizeof(FLOAT), dA_src, ldda, hB_dst, ldb, queue);
+    magma_getmatrix(m, n, sizeof(FLOAT), dA_src, ldda, hB_dst, ldb, queue)
+
+#define MAGMA_COPYMATRIX(m, n, dA_src, ldda, dB_dst, lddb, queue)                                  \
+    magma_copymatrix(m, n, sizeof(FLOAT), dA_src, ldda, dB_dst, lddb, queue)
 
 #define MAGMA_TIMER_START(time, queue)                                                             \
     magma_queue_sync(queue);                                                                       \

@@ -9,20 +9,19 @@ void print_version_mkl() {
 
 int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
                                                        const FLOAT *b, const int32_t ldb) {
-	const int32_t sizeA = lda*n;
-	const int32_t sizeB = ldb*nrhs;
+	FLOAT *x  = nullptr;
+	FLOAT *LU = nullptr;
+	MKL_FLOAT_ALLOCATOR( x,  ldb*nrhs );
+	MKL_FLOAT_ALLOCATOR( LU, lda*n    );
+	blas_copy_cpu(ldb*nrhs, b, 1, x, 1);
+	blas_copy_cpu(lda*n, A, 1, LU, 1);
 
 	int32_t *ipiv = nullptr;
-	FLOAT *x      = nullptr;
-	FLOAT *LU     = nullptr;
-	MKL_INT32_ALLOCATOR(ipiv, n);
-	MKL_FLOAT_ALLOCATOR(x, sizeB);
-	MKL_FLOAT_ALLOCATOR(LU, sizeA);
-	blas_copy_cpu(sizeB, b, 1, x, 1);
-	blas_copy_cpu(sizeA, A, 1, LU, 1);
+	MKL_INT32_ALLOCATOR( ipiv, n );
+
+	double t1 = 0.0, t2 = 0.0, t3 = 0.0;
 
 	printf("\nStart mkl getrf...\n");
-	double t1 = 0.0, t2 = 0.0, t3 = 0.0;
 
 	MKL_TIMER_START( t1 );
 	// A = P*L*U
@@ -43,7 +42,7 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 	print_to_file_time("mkl_getrs_time.log", n, t2);
 
 	FLOAT *Ax_b = nullptr;
-	MKL_FLOAT_ALLOCATOR(Ax_b, ldb);
+	MKL_FLOAT_ALLOCATOR( Ax_b, ldb );
 	blas_copy_cpu(ldb, b, 1, Ax_b, 1);
 
 	printf("Start mkl gemv...\n");
@@ -56,13 +55,13 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_time.log", n, t3);
 
-	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
+	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
 	if (nrm_b <= 1e-24) {
 		printf("norm(b) <= 1e-20!\n");
 		goto cleanup;
 	}
 
-	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
+	const FLOAT residual = blas_nrm2_cpu(n, Ax_b, 1);
 	const FLOAT relat_residual = residual / nrm_b;
 	printf("Relative residual: %e\n\n", relat_residual);
 	print_to_file_residual("mkl_relat_residual.log", n, relat_residual);
@@ -78,22 +77,18 @@ cleanup:
 
 int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
                                                            const FLOAT *b, const int32_t ldb) {
-	const int32_t sizeA = lda*n;
-	const int32_t sizeB = ldb*nrhs;
 	const int32_t nfact = n;
 
-	int32_t *ipiv = nullptr;
-	FLOAT *x      = nullptr;
-	FLOAT *LU     = nullptr;
-	MKL_INT32_ALLOCATOR(ipiv, n);
-	MKL_FLOAT_ALLOCATOR(x, sizeB);
-	MKL_FLOAT_ALLOCATOR(LU, sizeA);
-	blas_copy_cpu(sizeB, b, 1, x, 1);
-	blas_copy_cpu(sizeA, A, 1, LU, 1);
+	FLOAT *x  = nullptr;
+	FLOAT *LU = nullptr;
+	MKL_FLOAT_ALLOCATOR( x,  ldb*nrhs );
+	MKL_FLOAT_ALLOCATOR( LU, lda*n    );
+	blas_copy_cpu(ldb*nrhs, b, 1, x, 1);
+	blas_copy_cpu(lda*n, A, 1, LU, 1);
+
+	double t1 = 0.0, t2 = 0.0, t3 = 0.0;
 
 	printf("\nStart mkl getrf_npi...\n");
-	float t1 = 0.0f, t2 = 0.0f, t3 = 0.0f;
-	double t_start = 0.0, t_stop = 0.0;
 
 	MKL_TIMER_START( t1 );
 	// A = P*L*U
@@ -114,7 +109,7 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 	print_to_file_time("mkl_getrsv_npi_time.log", n, t2);
 
 	FLOAT *Ax_b = nullptr;
-	MKL_FLOAT_ALLOCATOR(Ax_b, ldb);
+	MKL_FLOAT_ALLOCATOR( Ax_b, ldb );
 	blas_copy_cpu(ldb, b, 1, Ax_b, 1);
 
 	printf("Start mkl gemv...\n");
@@ -127,13 +122,13 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 	printf("Stop mkl gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("mkl_gemv_npi_time.log", n, t3);
 
-	const FLOAT nrm_b = blas_nrm2_cpu(ldb, b, 1);
+	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
 	if (nrm_b <= 1e-24) {
 		printf("norm(b) <= 1e-20!\n");
 		goto cleanup;
 	}
 
-	const FLOAT residual = blas_nrm2_cpu(ldb, Ax_b, 1);
+	const FLOAT residual = blas_nrm2_cpu(n, Ax_b, 1);
 	const FLOAT relat_residual = residual / nrm_b;
 	printf("Relative residual: %e\n\n", relat_residual);
 	print_to_file_residual("mkl_relat_npi_residual.log", n, relat_residual);

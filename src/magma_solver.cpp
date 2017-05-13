@@ -4,8 +4,6 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 														 const FLOAT *B, const int32_t ldb) {
 	const int32_t ldda   = magma_roundup(lda, 32);
 	const int32_t lddb   = ldda;
-	const int32_t sizedA = ldda*n;
-	const int32_t sizedB = lddb*nrhs;
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
@@ -14,17 +12,17 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 
 	FLOAT *d_A = nullptr;
 	FLOAT *d_B = nullptr;
-	MAGMA_FLOAT_ALLOCATOR( d_A, sizedA );
-	MAGMA_FLOAT_ALLOCATOR( d_B, sizedB );
+	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n    );
+	MAGMA_FLOAT_ALLOCATOR( d_B, lddb*nrhs );
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
 	MAGMA_SETMATRIX(n, nrhs, B, ldb, d_B, lddb, queue);
 
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_X  = nullptr;
-	MAGMA_FLOAT_ALLOCATOR( d_LU, sizedA );
-	MAGMA_FLOAT_ALLOCATOR(  d_X, sizedB );
-	magma_copy_gpu(sizedA, d_A, 1, d_LU, 1, queue);
-	magma_copy_gpu(sizedB, d_B, 1, d_X, 1, queue);
+	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n    );
+	MAGMA_FLOAT_ALLOCATOR(  d_X, lddb*nrhs );
+	MAGMA_COPYMATRIX(n, n, d_A, ldda, d_LU, ldda, queue);
+	MAGMA_COPYMATRIX(n, nrhs, d_B, lddb, d_X, lddb, queue);
 
 	magma_int_t info  = 0;
 	int32_t *ipiv = nullptr;
@@ -53,8 +51,8 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 	print_to_file_time("magma_getrs_time.log", n, t2);
 
 	FLOAT *d_Ax_b = nullptr;
-	MAGMA_FLOAT_ALLOCATOR( d_Ax_b, n );
-	magma_copy_gpu(n, d_B, 1, d_Ax_b, 1, queue);
+	MAGMA_FLOAT_ALLOCATOR( d_Ax_b, lddb );
+	magma_copy_gpu(lddb, d_B, 1, d_Ax_b, 1, queue);
 	const FLOAT alpha = 1.0;
 	const FLOAT beta = -1.0;
 
@@ -94,8 +92,6 @@ int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, con
 														     const FLOAT *B, const int32_t ldb) {
 	const int32_t ldda   = magma_roundup(lda, 32);
 	const int32_t lddb   = ldda;
-	const int32_t sizedA = ldda*n;
-	const int32_t sizedB = lddb*nrhs;
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
@@ -104,17 +100,17 @@ int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, con
 
 	FLOAT *d_A = nullptr;
 	FLOAT *d_B = nullptr;
-	MAGMA_FLOAT_ALLOCATOR( d_A, sizedA );
-	MAGMA_FLOAT_ALLOCATOR( d_B, sizedB );
+	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n );
+	MAGMA_FLOAT_ALLOCATOR( d_B, lddb*nrhs );
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
 	MAGMA_SETMATRIX(n, nrhs, B, ldb, d_B, lddb, queue);
 
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_X  = nullptr;
-	MAGMA_FLOAT_ALLOCATOR( d_LU, sizedA );
-	MAGMA_FLOAT_ALLOCATOR(  d_X, sizedB );
-	magma_copy_gpu(sizedA, d_A, 1, d_LU, 1, queue);
-	magma_copy_gpu(sizedB, d_B, 1, d_X, 1, queue);
+	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n );
+	MAGMA_FLOAT_ALLOCATOR(  d_X, lddb*nrhs );
+	magma_copy_gpu(ldda*n, d_A, 1, d_LU, 1, queue);
+	magma_copy_gpu(lddb*nrhs, d_B, 1, d_X, 1, queue);
 
 	magma_int_t info  = 0;
 

@@ -30,6 +30,7 @@ OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
 # -DIS_DOUBLE use double precision
+# -DIS_MAGMA use MAGMA, no MKL
 CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE -DIS_MAGMA \
            -I$(MAGMADIR)/include -DADD_            \
            -I$(CUDADIR)/include                    \

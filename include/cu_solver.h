@@ -23,6 +23,11 @@
     CUBLAS_CALL( cublasSetMatrixAsync(m, n, sizeof(FLOAT), hA_src, lda, dB_dst, lddb, stream) );   \
     CUDA_SAFE_CALL( cudaStreamSynchronize(stream) )
 
+#define CUDA_COPYMATRIX(m, n, dA_src, ldda, dB_dst, lddb, queue)                                   \
+    CUDA_SAFE_CALL( cudaMemcpy2DAsync(dB_dst, sizeof(FLOAT)*(lddb), dA_src, sizeof(FLOAT)*(ldda),  \
+                                         sizeof(FLOAT)*(m), n, cudaMemcpyDeviceToDevice, stream) );\
+    CUDA_SAFE_CALL( cudaStreamSynchronize(stream) )
+
 #define CUDA_TIMER_START(time, stream)                                                             \
     CUDA_SAFE_CALL( cudaStreamSynchronize(stream) );                                               \
     time = get_wtime()

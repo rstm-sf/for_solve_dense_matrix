@@ -61,10 +61,10 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	FLOAT *x_init = nullptr;
 	FLOAT *b      = nullptr;
 	MKL_FLOAT_ALLOCATOR( A,      lda*n    );
-	MKL_FLOAT_ALLOCATOR( x_init, ldb*nrhs );
+	MKL_FLOAT_ALLOCATOR( x_init, n*nrhs   );
 	MKL_FLOAT_ALLOCATOR( b,      ldb*nrhs );
 	fill_matrix(n, n, A, lda, 100.0);
-	fill_vector(n, nrhs, x_init, ldb, 10.0);
+	fill_vector(n, nrhs, x_init, n, 10.0);
 
 	// calculate b
 	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x_init, 1, 0.0, b, 1);
@@ -98,21 +98,24 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	FLOAT *x_init = nullptr;
 	FLOAT *b      = nullptr;
 	MAGMA_FLOAT_ALLOCATOR_CPU( A,      lda*n   );
-	MAGMA_FLOAT_ALLOCATOR_CPU( x_init, ldb*nrhs);
+	MAGMA_FLOAT_ALLOCATOR_CPU( x_init, n*nrhs  );
 	MAGMA_FLOAT_ALLOCATOR_CPU( b,      ldb*nrhs);
 	fill_matrix(n, n, A, lda, 100.0);
-	fill_vector(n, nrhs, x_init, ldb, 10.0);
+	fill_vector(n, nrhs, x_init, n, 10.0);
 
 	// calculate b
 	FLOAT *d_A = nullptr;
+	FLOAT *d_X = nullptr;
 	FLOAT *d_B = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n   );
+	MAGMA_FLOAT_ALLOCATOR( d_X, n*nrhs   );
 	MAGMA_FLOAT_ALLOCATOR( d_B, lddb*nrhs);
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
-	MAGMA_SETMATRIX(n, nrhs, x_init, ldb, d_B, lddb, queue);
-	magma_gemv_gpu(MagmaNoTrans, n, n, 1.0, d_A, ldda, d_B, 1, 0.0, d_B, 1, queue);
+	MAGMA_SETMATRIX(n, nrhs, x_init, n, d_X, n, queue);
+	magma_gemv_gpu(MagmaNoTrans, n, n, 1.0, d_A, ldda, d_X, 1, 0.0, d_B, 1, queue);
 	MAGMA_GETMATRIX(n, nrhs, d_B, lddb, b, ldb, queue);
 	MAGMA_FREE(d_A);
+	MAGMA_FREE(d_X);
 	MAGMA_FREE(d_B);
 
 	magma_queue_destroy(queue);
