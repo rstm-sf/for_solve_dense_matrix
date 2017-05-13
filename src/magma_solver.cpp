@@ -2,8 +2,8 @@
 
 int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
 														 const FLOAT *B, const int32_t ldb) {
-	const int32_t ldda   = magma_roundup(lda, 32);
-	const int32_t lddb   = ldda;
+	const int32_t ldda = magma_roundup(lda, 32);
+	const int32_t lddb = ldda;
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
@@ -20,7 +20,7 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_X  = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n    );
-	MAGMA_FLOAT_ALLOCATOR(  d_X, lddb*nrhs );
+	MAGMA_FLOAT_ALLOCATOR( d_X,  lddb*nrhs );
 	MAGMA_COPYMATRIX(n, n, d_A, ldda, d_LU, ldda, queue);
 	MAGMA_COPYMATRIX(n, nrhs, d_B, lddb, d_X, lddb, queue);
 
@@ -42,7 +42,7 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 
 	printf("Start magma getrs...\n");
 
-	MAGMA_TIMER_STOP( t2, queue );
+	MAGMA_TIMER_START( t2, queue );
 	MAGMA_CALL( magma_getrs_gpu(MagmaNoTrans, n, nrhs, d_LU, ldda, ipiv, d_X, lddb, info) );
 	MAGMA_TIMER_STOP( t2, queue );
 
@@ -58,7 +58,7 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 
 	printf("Start magma gemv...\n");
 
-	MAGMA_TIMER_STOP( t3, queue );
+	MAGMA_TIMER_START( t3, queue );
 	magma_gemv_gpu(MagmaNoTrans, n, n, alpha, d_A, ldda, d_X, 1, beta, d_Ax_b, 1, queue);
 	MAGMA_TIMER_STOP( t3, queue );
 
@@ -107,8 +107,8 @@ int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, con
 
 	FLOAT *d_LU = nullptr;
 	FLOAT *d_X  = nullptr;
-	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n );
-	MAGMA_FLOAT_ALLOCATOR(  d_X, lddb*nrhs );
+	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n    );
+	MAGMA_FLOAT_ALLOCATOR( d_X,  lddb*nrhs );
 	magma_copy_gpu(ldda*n, d_A, 1, d_LU, 1, queue);
 	magma_copy_gpu(lddb*nrhs, d_B, 1, d_X, 1, queue);
 
@@ -128,7 +128,7 @@ int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, con
 
 	printf("Start magma getrs...\n");
 
-	MAGMA_TIMER_STOP( t2, queue );
+	MAGMA_TIMER_START( t2, queue );
 	MAGMA_CALL( magma_getrsnpi_gpu(MagmaNoTrans, n, nrhs, d_LU, ldda, d_X, lddb, info) );
 	MAGMA_TIMER_STOP( t2, queue );
 
@@ -144,7 +144,7 @@ int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, con
 
 	printf("Start magma gemv...\n");
 
-	MAGMA_TIMER_STOP( t3, queue );
+	MAGMA_TIMER_START( t3, queue );
 	magma_gemv_gpu(MagmaNoTrans, n, n, alpha, d_A, ldda, d_X, 1, beta, d_Ax_b, 1, queue);
 	MAGMA_TIMER_STOP( t3, queue );
 
