@@ -5,8 +5,8 @@ NAME   = test_af.exe
 NAME_D = test_af_d.exe
 ####################################################################################################
 # define library directories
-AFDIR   =
-CUDADIR =
+AFDIR   = /usr/local
+CUDADIR = /usr/local/cuda-8.0
 ####################################################################################################
 # Directory layout
 SRC_DIR      = src
@@ -27,7 +27,8 @@ OPTIMAZE          = $(OPTIMAZE_SPECIFIC) -fast
 OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
-CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE -DIS_AF
+CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE -DIS_AF \
+           -I$(CUDADIR)/include
 
 CXXFLAGS   = -Wall -MMD -pipe $(OPTIMAZE)
 CXXFLAGS_D = -Wall -MMD -pipe $(OPTIMAZE_D)

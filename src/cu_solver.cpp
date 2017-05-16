@@ -74,7 +74,7 @@ int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int3
 	FLOAT nrm_b = 0.0;
 	blas_nrm2_gpu(handle2, n, d_B, 1, nrm_b);
 	if (nrm_b <= 1e-24) {
-		printf("norm(b) <= 1e-20!\n");
+		printf("norm(b) <= 1e-24!\n");
 		goto cleanup;
 	}
 

@@ -32,7 +32,9 @@ int32_t main(int32_t argc, char** argv) {
 	}
 
 #ifdef IS_AF
+
 	arrayfire_solve(n);
+
 #else
 
 	switch (id_test) {

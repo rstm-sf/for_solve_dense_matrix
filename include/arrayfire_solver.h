@@ -2,8 +2,10 @@
 #define __ARRAYFIRE_SOLVER_H__
 
 #include "tools.h"
+#include "cu_solver.h"
 
 #include <arrayfire.h>
+#include <af/cuda.h>
 
 int32_t arrayfire_solve(const int32_t n);
 

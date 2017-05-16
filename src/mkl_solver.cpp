@@ -57,7 +57,7 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 
 	const FLOAT nrm_b = blas_nrm2_cpu(n, b, 1);
 	if (nrm_b <= 1e-24) {
-		printf("norm(b) <= 1e-20!\n");
+		printf("norm(b) <= 1e-24!\n");
 		goto cleanup;
 	}
 

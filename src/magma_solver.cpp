@@ -67,7 +67,7 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
 
 	const FLOAT nrm_b = magma_nrm2_gpu(n, d_B, 1, queue);
 	if (nrm_b <= 1e-24) {
-		printf("norm(b) <= 1e-20!\n");
+		printf("norm(b) <= 1e-24!\n");
 		goto cleanup;
 	}
 
