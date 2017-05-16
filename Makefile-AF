@@ -1,13 +1,12 @@
 ####################################################################################################
 # Result name for release version
-NAME   = test.exe
+NAME   = test_af.exe
 # Result name for debuag version
-NAME_D = test_d.exe
+NAME_D = test_af_d.exe
 ####################################################################################################
 # define library directories
-MAGMADIR =
-CUDADIR  =
-MKLROOT  =
+AFDIR   =
+CUDADIR =
 ####################################################################################################
 # Directory layout
 SRC_DIR      = src
@@ -19,7 +18,6 @@ RESULT_DIR_D = $(RESULT_DIR)
 ####################################################################################################
 # Compiler
 CXX   = icpc
-#NVCC  = nvcc
 ####################################################################################################
 # Linker
 LD = $(CXX)
@@ -29,43 +27,27 @@ OPTIMAZE          = $(OPTIMAZE_SPECIFIC) -fast
 OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
-# -DIS_DOUBLE use double precision
-# -DIS_MAGMA use MAGMA, no MKL
-CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE -DIS_MAGMA \
-           -I$(MAGMADIR)/include -DADD_            \
-           -I$(CUDADIR)/include                    \
-           -I$(MKLROOT)/include
+CPPFLAGS = -I$(INCLUDE_DIR) -DIS_DOUBLE -DIS_AF
 
 CXXFLAGS   = -Wall -MMD -pipe $(OPTIMAZE)
 CXXFLAGS_D = -Wall -MMD -pipe $(OPTIMAZE_D)
-
-#NV_SM        = -gencode arch=compute_50,code=sm_50
-#NV_COMP      = -gencode arch=compute_50,code=compute_50
-#NVCCFLAGS    = $(NV_SM) $(NV_COMP) -Wno-deprecated-gpu-targets -ccbin=$(CXX)
-#NVCCFLAGS_D := $(NVCCFLAGS) -G -O0 -Xcompiler "$(CXXFLAGS_D)"
-#NVCCFLAGS   += -O3 -Xcompiler "$(CXXFLAGS)"
 ####################################################################################################
 # Linker flags
-LDFLAGS   = -Wall $(OPTIMAZE_SPECIFIC) -qopenmp -static-intel -static-libstdc++
+LDFLAGS   = -Wall $(OPTIMAZE_SPECIFIC) -static-libstdc++
 LDFLAGS_D = $(LDFLAGS)
 ####################################################################################################
 # Linker additional libraries
-# -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group
-# -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group
-LIBDIRS = -L$(MKLROOT)/lib -L$(CUDADIR)/lib64 -L$(MAGMADIR)/lib
-
-LIBS  = -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group \
-        -lpthread -lstdc++ -lm
-LIBS += -lcublas -lcusparse -lcusolver -lcudart -lcudadevrt
-LIBS += -lmagma
+LIBS += -rdynamic $(AFDIR)/lib/libafcuda.so.3.5.0 $(CUDADIR)/lib64/libcublas.so \
+        $(CUDADIR)/lib64/libcudart_static.a -lpthread -ldl -lrt                 \
+        $(CUDADIR)/lib64/libcusolver.so $(CUDADIR)/lib64/libcusparse.so         \
+        $(CUDADIR)/lib64/libcufft.so $(CUDADIR)/nvvm/lib64/libnvvm.so -lcuda    \
+        -Wl,-rpath,$(AFDIR)/lib:$(CUDADIR)/lib64:$(CUDADIR)/nvvm/lib64
 ####################################################################################################
 RESULT     = $(RESULT_DIR)/$(NAME)
 RESULT_D   = $(RESULT_DIR_D)/$(NAME_D)
 
-OBJS       = $(BUILD_DIR)/tools.o          \
-             $(BUILD_DIR)/magma_solver.o   \
-             $(BUILD_DIR)/mkl_solver.o     \
-             $(BUILD_DIR)/cu_solver.o      \
+OBJS       = $(BUILD_DIR)/tools.o            \
+             $(BUILD_DIR)/arrayfire_solver.o \
              $(BUILD_DIR)/main.o
 
 OBJS_D     = $(subst $(BUILD_DIR)/,$(BUILD_DIR_D)/,$(OBJS))
@@ -95,8 +77,8 @@ $(BUILD_DIR_D)/%.o: $(SRC_DIR)/%.cpp
 
 
 $(RESULT): $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS) $(LIBDIRS)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(RESULT_D): $(OBJS_D)
-	$(LD) $(LDFLAGS_D) -o $@ $^ $(LIBS) $(LIBDIRS)
+	$(LD) $(LDFLAGS_D) -o $@ $^ $(LIBS)
 ####################################################################################################

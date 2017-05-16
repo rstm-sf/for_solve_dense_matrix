@@ -1,6 +1,12 @@
 /**************************************************************************************************/
 // matrix with column-major
 /**************************************************************************************************/
+#ifdef IS_AF
+
+#include "arrayfire_solver.h"
+
+#else
+
 #include "cu_solver.h"
 
 #ifndef IS_MAGMA
@@ -11,6 +17,7 @@
 
 int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve_npi,
                                                                          const bool is_cuda_solve);
+#endif // IS_AF
 
 int32_t main(int32_t argc, char** argv) {
 	int32_t n = 100, id_test = 1;
@@ -23,6 +30,10 @@ int32_t main(int32_t argc, char** argv) {
 				id_test = atoi(argv[i+1]);
 		}
 	}
+
+#ifdef IS_AF
+	arrayfire_solve(n);
+#else
 
 	switch (id_test) {
 	case 1: // all
@@ -41,8 +52,12 @@ int32_t main(int32_t argc, char** argv) {
 		printf("There is no such id test.\n");
 	}
 
+#endif // IS_AF
+
 	return 0;
 }
+
+#ifndef IS_AF
 
 int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve_npi,
                                                                          const bool is_cuda_solve) {
@@ -137,3 +152,5 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 
 	return 0;
 }
+
+#endif // IS_AF
