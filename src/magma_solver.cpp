@@ -90,8 +90,8 @@ cleanup:
 
 int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
 														     const FLOAT *B, const int32_t ldb) {
-	const int32_t ldda   = magma_roundup(lda, 32);
-	const int32_t lddb   = ldda;
+	const int32_t ldda = magma_roundup(lda, 32);
+	const int32_t lddb = ldda;
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
@@ -119,7 +119,11 @@ int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, con
 	printf("\nStart magma getrf_npi...\n");
 
 	MAGMA_TIMER_START( t1, queue );
+#ifdef IS_DOUBLE
+	magma_mpgetrfnpi_gpu(n, n, d_LU, ldda, &info, device);
+#else
 	MAGMA_CALL( magma_getrfnpi_gpu(n, n, d_LU, ldda, info) );
+#endif
 	CHECK_GETRF_ERROR( info );
 	MAGMA_TIMER_STOP( t1, queue );
 
@@ -171,4 +175,32 @@ cleanup:
 	MAGMA_FREE( d_B    );
 
 	return 0;
+}
+
+void magma_mpgetrfnpi_gpu(const int32_t m, const int32_t n, FLOAT *dA, const int32_t ldda,
+                                                       int32_t *info, const magma_device_t device) {
+	const int32_t lda = n;
+	magma_queue_t queue = nullptr;
+	magma_queue_create(device, &queue);
+
+	std::vector<float>  s_hA(lda*n);
+	std::vector<double> d_hA(lda*n);
+
+	MAGMA_GETMATRIX(m, n, dA, ldda, d_hA.data(), lda, queue);
+
+	copy(d_hA.begin(), d_hA.end(), s_hA.begin());
+
+	float *s_dA;
+	MAGMA_CALL( magma_malloc((void **)&(s_dA), sizeof(float)*ldda*n) );
+	magma_setmatrix(m, n, sizeof(float), s_hA.data(), lda, s_dA, ldda, queue);
+
+	MAGMA_CALL( magma_sgetrf_nopiv_gpu(m, n, s_dA, ldda, info) );
+
+	magma_getmatrix(m, n, sizeof(float), s_dA, ldda, s_hA.data(), lda, queue);
+
+	copy(s_hA.begin(), s_hA.end(), d_hA.begin());
+
+	MAGMA_SETMATRIX(m, n, d_hA.data(), lda, dA, ldda, queue);
+
+	MAGMA_FREE(s_dA);
 }

@@ -46,5 +46,7 @@ int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const i
                                                          const FLOAT *B, const int32_t ldb);
 int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
                                                              const FLOAT *B, const int32_t ldb);
+void magma_mpgetrfnpi_gpu(const int32_t m, const int32_t n, FLOAT *dA, const int32_t ldda,
+                                                       int32_t *info, const magma_device_t device);
 
 #endif // __MAGMA_SOLVER_H__

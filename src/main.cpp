@@ -20,7 +20,7 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 #endif // IS_AF
 
 int32_t main(int32_t argc, char** argv) {
-	int32_t n = 100, id_test = 4;
+	int32_t n = 100, id_test = 3;
 
 	if (argc > 1) {
 		for (int32_t i = 1; i < argc; ++i) {
