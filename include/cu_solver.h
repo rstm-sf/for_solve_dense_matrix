@@ -47,31 +47,4 @@ int32_t cu_getrf(const cusolverDnHandle_t handle, const int32_t m, const int32_t
 int32_t cu_mpgetrf(const cusolverDnHandle_t handle, const int32_t m, const int32_t n, FLOAT *dA,
                                              const int32_t ldda, int32_t *d_ipiv, int32_t *d_info);
 
-
-/*
-struct double_to_float 
-{ 
-   __host__ __device__ 
-   float operator()(double a) 
-   { 
-       return float(a); 
-   } 
-};
-*/
-
-template<class InputIterator, class OutputIterator>
-OutputIterator my_copy(InputIterator first, InputIterator last, OutputIterator result) {
-	/*
-	while (first!=last) {
-		*result = *first;
-		++result; ++first;
-	}
-	*/
-	//thrust::transform(first, last, result, float());
-	//double_to_float func;
-	//transform(first, last, result, func);
-
-	return result;
-}
-
 #endif // __CU_SOLVER_H__
