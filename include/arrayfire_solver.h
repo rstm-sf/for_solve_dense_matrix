@@ -8,5 +8,7 @@
 #include <af/cuda.h>
 
 int32_t arrayfire_solve(const int32_t n);
+// don't work!
+int32_t arrayfire_solve_test(const int32_t n);
 
 #endif // __ARRAYFIRE_SOLVER_H__

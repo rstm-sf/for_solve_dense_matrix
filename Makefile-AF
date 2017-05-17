@@ -5,8 +5,8 @@ NAME   = test_af.exe
 NAME_D = test_af_d.exe
 ####################################################################################################
 # define library directories
-AFDIR   = /usr/local
-CUDADIR = /usr/local/cuda-8.0
+AFDIR   =
+CUDADIR =
 ####################################################################################################
 # Directory layout
 SRC_DIR      = src
