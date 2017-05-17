@@ -39,7 +39,11 @@ int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int3
 	printf("\nStart cuda getrf...\n");
 
 	CUDA_TIMER_START( t1, stream );
+#ifdef IS_DOUBLE
+	CHECK_GETRF_ERROR( cu_mpgetrf(handle1, n, n, d_LU, ldda, d_ipiv, d_info) );
+#else
 	CHECK_GETRF_ERROR( cu_getrf(handle1, n, n, d_LU, ldda, d_ipiv, d_info) );
+#endif
 	CUDA_TIMER_STOP( t1, stream );
 
 	printf("Stop cuda getrf...\nTime calc: %f (s.)\n", t1);
@@ -103,17 +107,58 @@ cleanup:
 int32_t cu_getrf(const cusolverDnHandle_t handle, const int32_t m, const int32_t n, FLOAT *dA,
                                              const int32_t ldda, int32_t *d_ipiv, int32_t *d_info) {
 	int32_t bufferSize = 0;
-	CUSOLVER_CALL( lapack_getrf_bufferSize_gpu(handle, n, n, dA, ldda, bufferSize) );
+	CUSOLVER_CALL( lapack_getrf_bufferSize_gpu(handle, m, n, dA, ldda, bufferSize) );
 
 	FLOAT *buffer = NULL;
 	CUDA_FLOAT_ALLOCATOR( buffer, bufferSize );
 
-	CUSOLVER_CALL( lapack_getrf_gpu(handle, n, n, dA, ldda, buffer, d_ipiv, d_info) );
+	CUSOLVER_CALL( lapack_getrf_gpu(handle, m, n, dA, ldda, buffer, d_ipiv, d_info) );
 
 	int32_t h_info = 0;
 	CUDA_SAFE_CALL( cudaMemcpy(&h_info, d_info, sizeof(int32_t), cudaMemcpyDeviceToHost) );
 
 	CUDA_FREE( buffer );
+
+	return h_info;
+}
+
+int32_t cu_mpgetrf(const cusolverDnHandle_t handle, const int32_t m, const int32_t n, FLOAT *dA,
+                                             const int32_t ldda, int32_t *d_ipiv, int32_t *d_info) {
+	cudaStream_t stream;
+	cusolverDnGetStream(handle, &stream);
+	const int32_t lda = n;
+
+	std::vector<float>  s_hA(lda*n);
+	std::vector<double> d_hA(lda*n);
+
+	CUBLAS_GETMATRIX(m, n, dA, ldda, d_hA.data(), lda, stream);
+
+	copy(d_hA.begin(), d_hA.end(), s_hA.begin());
+
+	float *s_dA;
+	CUDA_SAFE_CALL( cudaMalloc((void **)&(s_dA), sizeof(float)*ldda*n) );
+	CUBLAS_CALL( cublasSetMatrixAsync(m, n, sizeof(float), s_hA.data(), lda, s_dA, ldda, stream) );
+	CUDA_SAFE_CALL( cudaStreamSynchronize(stream) )
+
+	int32_t bufferSize = 0;
+	CUSOLVER_CALL( cusolverDnSgetrf_bufferSize(handle, m, n, s_dA, ldda, &bufferSize) );
+
+	float *buffer;
+	CUDA_SAFE_CALL( cudaMalloc((void **)&(buffer), sizeof(float)*bufferSize) );
+
+	CUSOLVER_CALL( cusolverDnSgetrf(handle, m, n, s_dA, ldda, buffer, d_ipiv, d_info) );
+
+	int32_t h_info = 0;
+	CUDA_SAFE_CALL( cudaMemcpy(&h_info, d_info, sizeof(int32_t), cudaMemcpyDeviceToHost) );
+
+	CUBLAS_CALL( cublasGetMatrixAsync(m, n, sizeof(float), s_dA, ldda, s_hA.data(), lda, stream) );
+	CUDA_SAFE_CALL( cudaStreamSynchronize(stream) )
+
+	copy(s_hA.begin(), s_hA.end(), d_hA.begin());
+
+	CUBLAS_SETMATRIX(m, n, d_hA.data(), lda, dA, ldda, stream);
+
+	CUDA_FREE(s_dA);
 
 	return h_info;
 }

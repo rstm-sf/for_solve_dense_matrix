@@ -18,7 +18,7 @@
     }                                                                                              \
 }
 
-#define CUDA_SAFE_CALL( call )  CUDA_SAFE_CALL_NO_SYNC( call );
+#define CUDA_SAFE_CALL( call )  CUDA_SAFE_CALL_NO_SYNC( call )
 
 #define CUSOLVER_CALL( call ) {                                                                    \
     cusolverStatus_t err = call;                                                                   \

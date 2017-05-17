@@ -23,6 +23,10 @@
     CUBLAS_CALL( cublasSetMatrixAsync(m, n, sizeof(FLOAT), hA_src, lda, dB_dst, lddb, stream) );   \
     CUDA_SAFE_CALL( cudaStreamSynchronize(stream) )
 
+#define CUBLAS_GETMATRIX(m, n, dA_src, ldda, hB_dst, ldb, stream)                                  \
+    CUBLAS_CALL( cublasGetMatrixAsync(m, n, sizeof(FLOAT), dA_src, ldda, hB_dst, ldb, stream) );   \
+    CUDA_SAFE_CALL( cudaStreamSynchronize(stream) )
+
 #define CUDA_COPYMATRIX(m, n, dA_src, ldda, dB_dst, lddb, queue)                                   \
     CUDA_SAFE_CALL( cudaMemcpy2DAsync(dB_dst, sizeof(FLOAT)*(lddb), dA_src, sizeof(FLOAT)*(ldda),  \
                                          sizeof(FLOAT)*(m), n, cudaMemcpyDeviceToDevice, stream) );\
@@ -40,5 +44,34 @@ int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int3
                                                       const FLOAT *B, const int32_t ldb);
 int32_t cu_getrf(const cusolverDnHandle_t handle, const int32_t m, const int32_t n, FLOAT *dA,
                                              const int32_t ldda, int32_t *d_ipiv, int32_t *d_info);
+int32_t cu_mpgetrf(const cusolverDnHandle_t handle, const int32_t m, const int32_t n, FLOAT *dA,
+                                             const int32_t ldda, int32_t *d_ipiv, int32_t *d_info);
+
+
+/*
+struct double_to_float 
+{ 
+   __host__ __device__ 
+   float operator()(double a) 
+   { 
+       return float(a); 
+   } 
+};
+*/
+
+template<class InputIterator, class OutputIterator>
+OutputIterator my_copy(InputIterator first, InputIterator last, OutputIterator result) {
+	/*
+	while (first!=last) {
+		*result = *first;
+		++result; ++first;
+	}
+	*/
+	//thrust::transform(first, last, result, float());
+	//double_to_float func;
+	//transform(first, last, result, func);
+
+	return result;
+}
 
 #endif // __CU_SOLVER_H__
