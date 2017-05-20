@@ -101,6 +101,12 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 
 	MAGMA_CALL( magma_init() );
 
+#if IS_TEST_TRAN
+
+	magma_tran(n);
+
+#else
+
 	const int32_t ldda = magma_roundup(lda, 32);
 	const int32_t lddb = ldda;
 
@@ -149,6 +155,8 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	MAGMA_FREE_CPU(b     );
 
 	magma_finalize();
+
+#endif // IS_TEST_TRAN
 
 #endif // IS_MAGMA
 

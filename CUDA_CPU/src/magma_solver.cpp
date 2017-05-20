@@ -1,7 +1,7 @@
 #include "magma_solver.h"
 
 int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
-														 const FLOAT *B, const int32_t ldb) {
+                                                         const FLOAT *B, const int32_t ldb) {
 	const int32_t ldda = magma_roundup(lda, 32);
 	const int32_t lddb = ldda;
 
@@ -89,7 +89,7 @@ cleanup:
 }
 
 int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
-														     const FLOAT *B, const int32_t ldb) {
+                                                             const FLOAT *B, const int32_t ldb) {
 	const int32_t ldda = magma_roundup(lda, 32);
 	const int32_t lddb = ldda;
 
@@ -203,4 +203,45 @@ void magma_mpgetrfnpi_gpu(const int32_t m, const int32_t n, FLOAT *dA, const int
 	MAGMA_SETMATRIX(m, n, d_hA.data(), lda, dA, ldda, queue);
 
 	MAGMA_FREE(s_dA);
+}
+
+int32_t magma_tran(const int32_t n) {
+	const int32_t lda  = n;
+	const int32_t ldda = magma_roundup(lda, 32);
+
+	magma_device_t device;
+	magma_queue_t queue = nullptr;
+	magma_getdevice(&device);
+	magma_queue_create(device, &queue);
+
+	FLOAT *A = nullptr;
+	MAGMA_FLOAT_ALLOCATOR_CPU( A, lda*n );
+	fill_matrix(n, n, A, lda, 100.0);
+
+	double t1 = 0.0, t2 = 0.0;
+
+	FLOAT *d_A = nullptr;
+	MAGMA_TIMER_START( t1, queue );
+	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n );
+	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
+	MAGMA_TIMER_STOP( t1, queue );
+	printf("Overhead: %f (s.)\n", t1);
+	print_to_file_time("magma_overhead.log", n, t1);
+
+	printf("Start magma transpose_inplace...\n");
+	MAGMA_TIMER_START( t2, queue );
+#ifdef IS_DOUBLE
+	magmablas_dtranspose_inplace(n, d_A, ldda, queue);
+#else
+	magmablas_stranspose_inplace(n, d_A, ldda, queue);
+#endif
+	MAGMA_TIMER_STOP( t2, queue );
+	printf("Stop magma transpose_inplace...\nTime calc: %f (s.)\n", t2);
+	print_to_file_time("magma_transpose_inplace.log", n, t2);
+
+	magma_queue_destroy(queue);
+	MAGMA_FREE_CPU( A );
+	MAGMA_FREE( d_A );
+
+	return 0;
 }

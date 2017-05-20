@@ -5,9 +5,9 @@ NAME   = test_cl.exe
 NAME_D = test_cl_d.exe
 ####################################################################################################
 # define library directories
-OPENCL_INCLUDE   = /usr/local/cuda-8.0/include/CL
-VIENNACL_INCLUDE = /usr/local/include/viennacl
-OPENCL_LIB       = /usr/local/cuda-8.0/lib64
+OPENCL_INCLUDE   =
+VIENNACL_INCLUDE =
+OPENCL_LIB       =
 VIENNACL_LIB     =
 ####################################################################################################
 # Directory layout
@@ -20,7 +20,6 @@ RESULT_DIR_D = $(RESULT_DIR)
 ####################################################################################################
 # Compiler
 CXX   = icpc
-#NVCC  = nvcc
 ####################################################################################################
 # Linker
 LD = $(CXX)

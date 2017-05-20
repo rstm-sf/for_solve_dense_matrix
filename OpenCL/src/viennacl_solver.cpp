@@ -40,6 +40,7 @@ int32_t viennacl_solve(const int32_t n) {
 	
 	const vcl_scalar alpha = (FLOAT)1.0;
 	const vcl_scalar beta = (FLOAT)(-1.0);
+
 	printf("Start viennacl gemv...\n");
 	viennacl::backend::finish();
 	t3 = timer.get();
