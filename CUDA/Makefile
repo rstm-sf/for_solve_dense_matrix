@@ -30,10 +30,9 @@ OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
 # -DIS_DOUBLE use double precision
-# -DIS_TEST_TRAN test transpose_inplace in MAGMA
-CPPFLAGS = -I$(INCLUDE_DIR) -DIS_TEST_TRAN \
-           -I$(MAGMADIR)/include -DADD_    \
-           -I$(CUDADIR)/include            \
+CPPFLAGS = -I$(INCLUDE_DIR)              \
+           -I$(MAGMADIR)/include -DADD_  \
+           -I$(CUDADIR)/include          \
            -I$(MKLROOT)/include
 
 CXXFLAGS   = -Wall -MMD -pipe $(OPTIMAZE)

@@ -206,6 +206,8 @@ void magma_mpgetrfnpi_gpu(const int32_t m, const int32_t n, FLOAT *dA, const int
 }
 
 int32_t magma_tran(const int32_t n) {
+	MAGMA_CALL( magma_init() );
+
 	const int32_t lda  = n;
 	const int32_t ldda = magma_roundup(lda, 32);
 
@@ -242,6 +244,8 @@ int32_t magma_tran(const int32_t n) {
 	magma_queue_destroy(queue);
 	MAGMA_FREE_CPU( A );
 	MAGMA_FREE( d_A );
+
+	magma_finalize();
 
 	return 0;
 }
