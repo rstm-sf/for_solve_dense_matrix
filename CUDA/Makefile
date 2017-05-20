@@ -1,8 +1,8 @@
 ####################################################################################################
 # Result name for release version
-NAME   = test.exe
+NAME   = test_cuda.exe
 # Result name for debuag version
-NAME_D = test_d.exe
+NAME_D = test_cuda_d.exe
 ####################################################################################################
 # define library directories
 MAGMADIR =
@@ -30,11 +30,10 @@ OPTIMAZE_D        = $(OPTIMAZE_SPECIFIC) -O0 -g
 ####################################################################################################
 # Compiler flags
 # -DIS_DOUBLE use double precision
-# -DIS_MAGMA use MAGMA, no MKL
 # -DIS_TEST_TRAN test transpose_inplace in MAGMA
-CPPFLAGS = -I$(INCLUDE_DIR) -DIS_MAGMA -DIS_TEST_TRAN \
-           -I$(MAGMADIR)/include -DADD_               \
-           -I$(CUDADIR)/include                       \
+CPPFLAGS = -I$(INCLUDE_DIR) -DIS_TEST_TRAN \
+           -I$(MAGMADIR)/include -DADD_    \
+           -I$(CUDADIR)/include            \
            -I$(MKLROOT)/include
 
 CXXFLAGS   = -Wall -MMD -pipe $(OPTIMAZE)
@@ -51,8 +50,8 @@ LDFLAGS   = -Wall $(OPTIMAZE_SPECIFIC) -qopenmp -static-intel -static-libstdc++
 LDFLAGS_D = $(LDFLAGS)
 ####################################################################################################
 # Linker additional libraries
-# -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group
-# -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group
+# parallel: -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group
+# sequential: -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group
 LIBDIRS = -L$(MKLROOT)/lib -L$(CUDADIR)/lib64 -L$(MAGMADIR)/lib
 
 LIBS  = -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group \
@@ -65,7 +64,6 @@ RESULT_D   = $(RESULT_DIR_D)/$(NAME_D)
 
 OBJS       = $(BUILD_DIR)/tools.o          \
              $(BUILD_DIR)/magma_solver.o   \
-             $(BUILD_DIR)/mkl_solver.o     \
              $(BUILD_DIR)/cu_solver.o      \
              $(BUILD_DIR)/main.o
 

@@ -8,19 +8,14 @@
 #else
 
 #include "cu_solver.h"
-
-#ifndef IS_MAGMA
-#include "mkl_solver.h"
-#else
 #include "magma_solver.h"
-#endif
 
 int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve_npi,
                                                                          const bool is_cuda_solve);
 #endif // IS_AF
 
 int32_t main(int32_t argc, char** argv) {
-	int32_t n = 100, id_test = 3;
+	int32_t n = 100, id_test = 1;
 
 	if (argc > 1) {
 		for (int32_t i = 1; i < argc; ++i) {
@@ -41,10 +36,10 @@ int32_t main(int32_t argc, char** argv) {
 	case 1: // all
 		test_solve(n, true, true, true); break;
 
-	case 2: // mkl/magma solve
+	case 2: // magma solve
 		test_solve(n, true, false, false); break;
 
-	case 3: // mkl/magma solve_npi
+	case 3: // magma solve_npi
 		test_solve(n, false, true, false); break;
 
 	case 4: // cuda solve
@@ -69,35 +64,6 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	const int32_t lda  = n;
 	const int32_t ldb  = lda;
 	const int32_t nrhs = 1;
-
-#ifndef IS_MAGMA
-
-	print_version_mkl();
-
-	FLOAT *A      = nullptr;
-	FLOAT *x_init = nullptr;
-	FLOAT *b      = nullptr;
-	MKL_FLOAT_ALLOCATOR( A,      lda*n    );
-	MKL_FLOAT_ALLOCATOR( x_init, n*nrhs   );
-	MKL_FLOAT_ALLOCATOR( b,      ldb*nrhs );
-	fill_matrix(n, n, A, lda, 100.0);
-	fill_vector(n, nrhs, x_init, n, 10.0);
-
-	// calculate b
-	blas_gemv_cpu(CblasColMajor, CblasNoTrans, n, n, 1.0, A, lda, x_init, 1, 0.0, b, 1);
-
-	if (is_m_solve)
-		mkl_solve(n, nrhs, A, lda, b, ldb);
-	if (is_m_solve_npi)
-		mkl_solve_npi(n, nrhs, A, lda, b, ldb);
-	if (is_cuda_solve)
-		cu_solve(n, nrhs, A, lda, b, ldb);
-
-	MKL_FREE(A);
-	MKL_FREE(x_init);
-	MKL_FREE(b);
-
-#else // IS_MAGMA
 
 	MAGMA_CALL( magma_init() );
 
@@ -157,8 +123,6 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	magma_finalize();
 
 #endif // IS_TEST_TRAN
-
-#endif // IS_MAGMA
 
 	return 0;
 }

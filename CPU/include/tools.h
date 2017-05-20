@@ -10,8 +10,8 @@
 #include <cstring>
 #include <cstdint>
 #include <cinttypes>
-#include <algorithm>
 
+#include <algorithm>
 #include <vector>
 
 #define CHECK_GETRF_ERROR( call ) {                                                                \
