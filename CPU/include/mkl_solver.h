@@ -31,5 +31,6 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
                                                            const FLOAT *b, const int32_t ldb);
 int32_t lapack_getrsnpi_cpu(const int32_t layout, const char trans, const int32_t n,
                const int32_t nrhs, const FLOAT *a, const int32_t lda, FLOAT *b, const int32_t ldb);
+int32_t mkl_tran(const int32_t n);
 
 #endif // __MKL_SOLVER_H__

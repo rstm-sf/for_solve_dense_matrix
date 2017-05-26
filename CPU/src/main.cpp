@@ -27,6 +27,9 @@ int32_t main(int32_t argc, char** argv) {
 	case 3: // mkl_npi
 		test_solve(n, false, true); break;
 
+	case 4: // mkl_tran
+		mkl_tran(n); break;
+
 	default:
 		printf("There is no such id test.\n");
 	}

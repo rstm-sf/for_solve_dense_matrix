@@ -183,3 +183,27 @@ int32_t lapack_getrsnpi_cpu(const int32_t layout, const char trans, const int32_
 
 	return 0;
 }
+
+int32_t mkl_tran(const int32_t n) {
+	const int32_t lda  = n;
+	FLOAT *A = nullptr;
+	MKL_FLOAT_ALLOCATOR( A, lda*n );
+	fill_matrix(n, n, A, lda, 100.0);
+
+	double t1 = 0.0;
+
+	printf("Start mkl transpose_inplace...\n");
+	MKL_TIMER_START( t1 );
+#ifdef IS_DOUBLE
+	mkl_dimatcopy('R', 'T', n, n, 1.0f, A, lda, lda);
+#else
+	mkl_simatcopy('R', 'T', n, n, 1.0, A, lda, lda);
+#endif
+	MKL_TIMER_STOP( t1 );
+	printf("Stop mkl transpose_inplace...\nTime calc: %f (s.)\n", t1);
+	print_to_file_time("mkl_dimatcopy.log", n, t1);
+
+	MKL_FREE( A );
+
+	return 0;
+}
