@@ -48,6 +48,9 @@ int32_t cu_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int3
 
 	printf("Stop cuda getrf...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("cuda_getrf_time.log", n, t1);
+	const double perf_getrf = get_gflops_getrf(n, n) / t1;
+	printf("Gflop/s: %f\n", perf_getrf);
+	print_to_file_time("cuda_perform_getrf_time.log", n, perf_getrf);
 
 	printf("Start cuda getrs...\n");
 

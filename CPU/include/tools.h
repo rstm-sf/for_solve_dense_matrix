@@ -40,5 +40,6 @@ void print_to_file_time(const char* fname, const int32_t n, const double time);
 void print_to_file_residual(const char* fname, const int32_t n, const FLOAT residual);
 
 double get_wtime();
+double get_gflops_getrf(const int32_t m, const int32_t n);
 
 #endif // __TOOLS_H__

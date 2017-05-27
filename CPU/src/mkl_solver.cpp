@@ -30,6 +30,10 @@ int32_t mkl_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int
 
 	printf("Stop mkl getrf...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("mkl_getrf_time.log", n, t1);
+	const double perf_getrf = get_gflops_getrf(n, n) / t1;
+	printf("Gflop/s: %f\n", perf_getrf);
+	print_to_file_time("mkl_perform_getrf_time.log", n, perf_getrf);
+
 	printf("Start mkl getrs...\n");
 
 	MKL_TIMER_START( t2 );
@@ -97,6 +101,10 @@ int32_t mkl_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const
 
 	printf("Stop mkl getrf_npi...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("mkl_getrf_npi_time.log", n, t1);
+	const double perf_getrf = get_gflops_getrf(n, n) / t1;
+	printf("Gflop/s: %f\n", perf_getrf);
+	print_to_file_time("mkl_perform_getrf_npi_time.log", n, perf_getrf);
+
 	printf("Start mkl getrsv_npi...\n");
 
 	MKL_TIMER_START( t2 );

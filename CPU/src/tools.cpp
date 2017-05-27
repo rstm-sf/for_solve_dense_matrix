@@ -32,3 +32,20 @@ double get_wtime() {
 	gettimeofday(&t, nullptr);
 	return t.tv_sec + t.tv_usec*1e-6;
 }
+
+double get_gflops_getrf(const int32_t m, const int32_t n) {
+	const double n1 = m < n ? double(m) : double(n);
+	const double n2 = n < m ? double(m) : double(n);
+
+	const double t1 = 1.0/3.0;
+	const double t2 = 2.0/3.0;
+	const double t3 = n2 - t1 * n1;
+
+	// 0.5 * n1 * (n1 * (n2 - 1/3 * n1 - 1) + n2) + 2/3 * n1
+	const double fmuls = n1 * (0.5 * (n1 * (t3 - 1.0) + n2) + t2);
+
+	// 0.5 * n1 * (n1 * (n2 - 1/3 * n1) - n2) + 1/6) * n1
+	const double fadds = n1 * (0.5 * (n1 * t3 - n2) + t2);
+
+	return (fmuls + fadds) * 1.0e-9;
+}
