@@ -90,15 +90,15 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	fill_vector(n, nrhs, x_init, n, 10.0);
 
 	// calculate b
-	FLOAT *d_A = nullptr;
-	FLOAT *d_X = nullptr;
-	FLOAT *d_B = nullptr;
+	magma_ptr d_A = nullptr;
+	magma_ptr d_X = nullptr;
+	magma_ptr d_B = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n   );
 	MAGMA_FLOAT_ALLOCATOR( d_X, n*nrhs   );
 	MAGMA_FLOAT_ALLOCATOR( d_B, lddb*nrhs);
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
 	MAGMA_SETMATRIX(n, nrhs, x_init, n, d_X, n, queue);
-	magma_gemv_gpu(MagmaNoTrans, n, n, 1.0, d_A, ldda, d_X, 1, 0.0, d_B, 1, queue);
+	magma_gemv_gpu(n, 1.0, d_A, ldda, d_X, 0.0, d_B, queue);
 	MAGMA_GETMATRIX(n, nrhs, d_B, lddb, b, ldb, queue);
 	MAGMA_FREE(d_A);
 	MAGMA_FREE(d_X);
@@ -107,9 +107,9 @@ int32_t test_solve(const int32_t n, const bool is_m_solve, const bool is_m_solve
 	magma_queue_destroy(queue);
 
 	if (is_m_solve)
-		magma_solve(n, nrhs, A, lda, b, ldb);
+		magma_solve(n, A, lda, b, ldb);
 	if (is_m_solve_npi)
-		magma_solve_npi(n, nrhs, A, lda, b, ldb);
+		magma_solve_npi(n, A, lda, b, ldb);
 	if (is_cuda_solve)
 		cu_solve(n, nrhs, A, lda, b, ldb);
 

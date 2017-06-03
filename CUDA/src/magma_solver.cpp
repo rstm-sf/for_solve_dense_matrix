@@ -1,81 +1,82 @@
 #include "magma_solver.h"
 
-int32_t magma_solve(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
-                                                         const FLOAT *B, const int32_t ldb) {
-	const int32_t ldda = magma_roundup(lda, 32);
-	const int32_t lddb = ldda;
+int32_t magma_solve(const magma_int_t n, const FLOAT *A, const magma_int_t lda,
+                                         const FLOAT *B, const magma_int_t ldb) {
+	const magma_int_t nrhs = 1;
+	const magma_int_t ldda = magma_roundup(lda, 32);
+	const magma_int_t lddb = ldda;
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
 	magma_getdevice(&device);
 	magma_queue_create(device, &queue);
 
-	FLOAT *d_A = nullptr;
-	FLOAT *d_B = nullptr;
+	magma_ptr d_A = nullptr;
+	magma_ptr d_B = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n    );
 	MAGMA_FLOAT_ALLOCATOR( d_B, lddb*nrhs );
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
 	MAGMA_SETMATRIX(n, nrhs, B, ldb, d_B, lddb, queue);
 
-	FLOAT *d_LU = nullptr;
-	FLOAT *d_X  = nullptr;
+	magma_ptr d_LU = nullptr;
+	magma_ptr d_X  = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n    );
 	MAGMA_FLOAT_ALLOCATOR( d_X,  lddb*nrhs );
 	MAGMA_COPYMATRIX(n, n, d_A, ldda, d_LU, ldda, queue);
 	MAGMA_COPYMATRIX(n, nrhs, d_B, lddb, d_X, lddb, queue);
 
 	magma_int_t info  = 0;
-	int32_t *ipiv = nullptr;
-	MAGMA_INT32_ALLOCATOR_CPU( ipiv, n );
+	magma_int_t *ipiv = nullptr;
+	MAGMA_INT_ALLOCATOR_CPU( ipiv, n );
 
 	double t1 = 0.0, t2 = 0.0, t3 = 0.0;
 
 	printf("\nStart magma getrf...\n");
 
 	MAGMA_TIMER_START( t1, queue );
-	MAGMA_CALL( magma_getrf_gpu(n, n, d_LU, ldda, ipiv, info) );
-	CHECK_GETRF_ERROR( info );
+	MAGMA_CALL( magma_getrf_gpu(n, d_LU, ldda, ipiv, &info) );
+	CHECK_GETRF_ERROR( int32_t(info) );
 	MAGMA_TIMER_STOP( t1, queue );
 
 	printf("Stop magma getrf...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("magma_getrf_time.log", n, t1);
-	const double perf_getrf = get_gflops_getrf(n, n) / t1;
+	double perf_getrf = get_gflops_getrf(n, n) / t1;
 	printf("Gflop/s: %f\n", perf_getrf);
 	print_to_file_time("magma_perform_getrf_time.log", n, perf_getrf);
 
 	printf("Start magma getrs...\n");
 
 	MAGMA_TIMER_START( t2, queue );
-	MAGMA_CALL( magma_getrs_gpu(MagmaNoTrans, n, nrhs, d_LU, ldda, ipiv, d_X, lddb, info) );
+	MAGMA_CALL( magma_getrs_gpu(n, d_LU, ldda, ipiv, d_X, lddb, &info) );
 	MAGMA_TIMER_STOP( t2, queue );
 
 	printf("Stop magma getrs...\nTime calc: %f (s.)\n", t2);
 	printf("Time calc magma getrf+getrs: %f (s.)\n", t1+t2);
 	print_to_file_time("magma_getrs_time.log", n, t2);
 
-	FLOAT *d_Ax_b = nullptr;
+	magma_ptr d_Ax_b = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_Ax_b, lddb );
-	magma_copy_gpu(lddb, d_B, 1, d_Ax_b, 1, queue);
-	const FLOAT alpha = 1.0;
-	const FLOAT beta = -1.0;
+	MAGMA_COPYVECTOR(lddb, d_B, 1, d_Ax_b, 1, queue);
+	FLOAT alpha = 1.0;
+	FLOAT beta = -1.0;
 
 	printf("Start magma gemv...\n");
 
 	MAGMA_TIMER_START( t3, queue );
-	magma_gemv_gpu(MagmaNoTrans, n, n, alpha, d_A, ldda, d_X, 1, beta, d_Ax_b, 1, queue);
+	magma_gemv_gpu(n, alpha, d_A, ldda, d_X, beta, d_Ax_b, queue);
 	MAGMA_TIMER_STOP( t3, queue );
 
 	printf("Stop magma gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("magma_gemv_time.log", n, t3);
 
-	const FLOAT nrm_b = magma_nrm2_gpu(n, d_B, 1, queue);
+	FLOAT nrm_b = magma_nrm2_gpu(n, d_B, queue);
 	if (nrm_b <= 1e-24) {
 		printf("norm(b) <= 1e-24!\n");
 		goto cleanup;
 	}
 
-	const FLOAT residual = magma_nrm2_gpu(n, d_Ax_b, 1, queue);
-	const FLOAT relat_residual = residual / nrm_b;
+	FLOAT residual = magma_nrm2_gpu(n, d_Ax_b, queue);
+	FLOAT relat_residual = residual / nrm_b;
 	printf("Relative residual: %e\n\n", relat_residual);
 	print_to_file_residual("magma_relat_residual.log", n, relat_residual);
 
@@ -91,84 +92,81 @@ cleanup:
 	return 0;
 }
 
-int32_t magma_solve_npi(const int32_t n, const int32_t nrhs, const FLOAT *A, const int32_t lda,
-                                                             const FLOAT *B, const int32_t ldb) {
-	const int32_t ldda = magma_roundup(lda, 32);
-	const int32_t lddb = ldda;
+int32_t magma_solve_npi(const magma_int_t n, const FLOAT *A, const magma_int_t lda,
+                                             const FLOAT *B, const magma_int_t ldb) {
+	const magma_int_t nrhs = 1;
+	const magma_int_t ldda = magma_roundup(lda, 32);
+	const magma_int_t lddb = ldda;
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
 	magma_getdevice(&device);
 	magma_queue_create(device, &queue);
 
-	FLOAT *d_A = nullptr;
-	FLOAT *d_B = nullptr;
+	magma_ptr d_A = nullptr;
+	magma_ptr d_B = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n );
 	MAGMA_FLOAT_ALLOCATOR( d_B, lddb*nrhs );
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
 	MAGMA_SETMATRIX(n, nrhs, B, ldb, d_B, lddb, queue);
 
-	FLOAT *d_LU = nullptr;
-	FLOAT *d_X  = nullptr;
+	magma_ptr d_LU = nullptr;
+	magma_ptr d_X  = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_LU, ldda*n    );
 	MAGMA_FLOAT_ALLOCATOR( d_X,  lddb*nrhs );
-	magma_copy_gpu(ldda*n, d_A, 1, d_LU, 1, queue);
-	magma_copy_gpu(lddb*nrhs, d_B, 1, d_X, 1, queue);
+	MAGMA_COPYVECTOR(ldda*n, d_A, 1, d_LU, 1, queue);
+	MAGMA_COPYVECTOR(lddb*nrhs, d_B, 1, d_X, 1, queue);
 
-	magma_int_t info  = 0;
+	magma_int_t info = 0;
 
 	double t1 = 0.0, t2 = 0.0, t3 = 0.0;
 
 	printf("\nStart magma getrf_npi...\n");
 
 	MAGMA_TIMER_START( t1, queue );
-#ifdef IS_DOUBLE
-	magma_mpgetrfnpi_gpu(n, n, d_LU, ldda, &info, device);
-#else
-	MAGMA_CALL( magma_getrfnpi_gpu(n, n, d_LU, ldda, info) );
-#endif
-	CHECK_GETRF_ERROR( info );
+	MAGMA_CALL( magma_getrfnpi_gpu(n, d_LU, ldda, &info) );
+	CHECK_GETRF_ERROR( int32_t(info) );
 	MAGMA_TIMER_STOP( t1, queue );
 
 	printf("Stop magma getrf...\nTime calc: %f (s.)\n", t1);
 	print_to_file_time("magma_getrf_npi_time.log", n, t1);
-	const double perf_getrf = get_gflops_getrf(n, n) / t1;
+	double perf_getrf = get_gflops_getrf(n, n) / t1;
 	printf("Gflop/s: %f\n", perf_getrf);
 	print_to_file_time("magma_perform_getrf_npi_time.log", n, perf_getrf);
 
 	printf("Start magma getrs...\n");
 
 	MAGMA_TIMER_START( t2, queue );
-	MAGMA_CALL( magma_getrsnpi_gpu(MagmaNoTrans, n, nrhs, d_LU, ldda, d_X, lddb, info) );
+	MAGMA_CALL( magma_getrsnpi_gpu(n, d_LU, ldda, d_X, lddb, &info) );
 	MAGMA_TIMER_STOP( t2, queue );
 
 	printf("Stop magma getrs...\nTime calc: %f (s.)\n", t2);
 	printf("Time calc magma getrf+getrs: %f (s.)\n", t1+t2);
 	print_to_file_time("magma_getrs_npi_time.log", n, t2);
 
-	FLOAT *d_Ax_b = nullptr;
+	magma_ptr d_Ax_b = nullptr;
 	MAGMA_FLOAT_ALLOCATOR( d_Ax_b, lddb );
-	magma_copy_gpu(lddb, d_B, 1, d_Ax_b, 1, queue);
+	MAGMA_COPYVECTOR(lddb, d_B, 1, d_Ax_b, 1, queue);
 	const FLOAT alpha = 1.0;
 	const FLOAT beta = -1.0;
 
 	printf("Start magma gemv...\n");
 
 	MAGMA_TIMER_START( t3, queue );
-	magma_gemv_gpu(MagmaNoTrans, n, n, alpha, d_A, ldda, d_X, 1, beta, d_Ax_b, 1, queue);
+	magma_gemv_gpu(n, alpha, d_A, ldda, d_X, beta, d_Ax_b, queue);
 	MAGMA_TIMER_STOP( t3, queue );
 
 	printf("Stop magma gemv...\nTime calc: %f (s.)\n", t3);
 	print_to_file_time("magma_gemv_npi_time.log", n, t3);
 
-	const FLOAT nrm_b = magma_nrm2_gpu(n, d_B, 1, queue);
+	FLOAT nrm_b = magma_nrm2_gpu(n, d_B, queue);
 	if (nrm_b <= 1e-24) {
 		printf("norm(b) <= 1e-20!\n");
 		goto cleanup;
 	}
 
-	const FLOAT residual = magma_nrm2_gpu(n, d_Ax_b, 1, queue);
-	const FLOAT relat_residual = residual / nrm_b;
+	FLOAT residual = magma_nrm2_gpu(n, d_Ax_b, queue);
+	FLOAT relat_residual = residual / nrm_b;
 	printf("Relative residual: %e\n\n", relat_residual);
 	print_to_file_residual("magma_relat_npi_residual.log", n, relat_residual);
 
@@ -183,39 +181,11 @@ cleanup:
 	return 0;
 }
 
-void magma_mpgetrfnpi_gpu(const int32_t m, const int32_t n, FLOAT *dA, const int32_t ldda,
-                                                       int32_t *info, const magma_device_t device) {
-	const int32_t lda = n;
-	magma_queue_t queue = nullptr;
-	magma_queue_create(device, &queue);
-
-	std::vector<float>  s_hA(lda*n);
-	std::vector<double> d_hA(lda*n);
-
-	MAGMA_GETMATRIX(m, n, dA, ldda, d_hA.data(), lda, queue);
-
-	copy(d_hA.begin(), d_hA.end(), s_hA.begin());
-
-	float *s_dA;
-	MAGMA_CALL( magma_malloc((void **)&(s_dA), sizeof(float)*ldda*n) );
-	magma_setmatrix(m, n, sizeof(float), s_hA.data(), lda, s_dA, ldda, queue);
-
-	MAGMA_CALL( magma_sgetrf_nopiv_gpu(m, n, s_dA, ldda, info) );
-
-	magma_getmatrix(m, n, sizeof(float), s_dA, ldda, s_hA.data(), lda, queue);
-
-	copy(s_hA.begin(), s_hA.end(), d_hA.begin());
-
-	MAGMA_SETMATRIX(m, n, d_hA.data(), lda, dA, ldda, queue);
-
-	MAGMA_FREE(s_dA);
-}
-
-int32_t magma_tran(const int32_t n) {
+int32_t magma_tran(const magma_int_t n) {
 	MAGMA_CALL( magma_init() );
 
-	const int32_t lda  = n;
-	const int32_t ldda = magma_roundup(lda, 32);
+	const magma_int_t lda  = n;
+	const magma_int_t ldda = magma_roundup(lda, 32);
 
 	magma_device_t device;
 	magma_queue_t queue = nullptr;
@@ -228,7 +198,7 @@ int32_t magma_tran(const int32_t n) {
 
 	double t1 = 0.0, t2 = 0.0;
 
-	FLOAT *d_A = nullptr;
+	magma_ptr d_A = nullptr;
 	MAGMA_TIMER_START( t1, queue );
 	MAGMA_FLOAT_ALLOCATOR( d_A, ldda*n );
 	MAGMA_SETMATRIX(n, n, A, lda, d_A, ldda, queue);
@@ -238,11 +208,7 @@ int32_t magma_tran(const int32_t n) {
 
 	printf("Start magma transpose_inplace...\n");
 	MAGMA_TIMER_START( t2, queue );
-#ifdef IS_DOUBLE
-	magmablas_dtranspose_inplace(n, d_A, ldda, queue);
-#else
-	magmablas_stranspose_inplace(n, d_A, ldda, queue);
-#endif
+	magma_transpose_inplace(n, d_A, ldda, queue);
 	MAGMA_TIMER_STOP( t2, queue );
 	printf("Stop magma transpose_inplace...\nTime calc: %f (s.)\n", t2);
 	print_to_file_time("magma_transpose_inplace.log", n, t2);
@@ -254,4 +220,33 @@ int32_t magma_tran(const int32_t n) {
 	magma_finalize();
 
 	return 0;
+}
+
+void magma_mpgetrfnpi_gpu(const magma_int_t n, magma_ptr dA, const magma_int_t ldda,
+                                     magma_int_t *info, const magma_device_t device) {
+	magmaDouble_ptr dA_ = static_cast<magmaDouble_ptr>(dA);
+	const magma_int_t lda = n;
+	magma_queue_t queue = nullptr;
+	magma_queue_create(device, &queue);
+
+	std::vector<float>  s_hA(lda*n);
+	std::vector<double> d_hA(lda*n);
+
+	magma_dgetmatrix(n, n, dA_, ldda, d_hA.data(), lda, queue);
+
+	copy(d_hA.begin(), d_hA.end(), s_hA.begin());
+
+	magmaFloat_ptr s_dA;
+	MAGMA_CALL( magma_malloc((magma_ptr *)&(s_dA), sizeof(float)*ldda*n) );
+	magma_ssetmatrix(n, n, s_hA.data(), lda, s_dA, ldda, queue);
+
+	MAGMA_CALL( magma_sgetrf_nopiv_gpu(n, n, s_dA, ldda, info) );
+
+	magma_sgetmatrix(n, n, s_dA, ldda, s_hA.data(), lda, queue);
+
+	copy(s_hA.begin(), s_hA.end(), d_hA.begin());
+
+	magma_dsetmatrix(n, n, d_hA.data(), lda, dA_, ldda, queue);
+
+	MAGMA_FREE(s_dA);
 }
