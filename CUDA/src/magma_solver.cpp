@@ -223,30 +223,20 @@ int32_t magma_tran(const magma_int_t n) {
 }
 
 void magma_mpgetrfnpi_gpu(const magma_int_t n, magma_ptr dA, const magma_int_t ldda,
-                                     magma_int_t *info, const magma_device_t device) {
+                                                          const magma_queue_t queue) {
+	magma_int_t info = 0;
 	magmaDouble_ptr dA_ = static_cast<magmaDouble_ptr>(dA);
-	const magma_int_t lda = n;
-	magma_queue_t queue = nullptr;
-	magma_queue_create(device, &queue);
-
-	std::vector<float>  s_hA(lda*n);
-	std::vector<double> d_hA(lda*n);
-
-	magma_dgetmatrix(n, n, dA_, ldda, d_hA.data(), lda, queue);
-
-	copy(d_hA.begin(), d_hA.end(), s_hA.begin());
 
 	magmaFloat_ptr s_dA;
-	MAGMA_CALL( magma_malloc((magma_ptr *)&(s_dA), sizeof(float)*ldda*n) );
-	magma_ssetmatrix(n, n, s_hA.data(), lda, s_dA, ldda, queue);
+	MAGMA_CALL( magma_smalloc(&s_dA, ldda*n) );
+	magmablas_dlag2s(n, n, dA_, ldda, s_dA, ldda, queue, &info);
+	CHECK_GETRF_ERROR( int32_t(info) );
 
-	MAGMA_CALL( magma_sgetrf_nopiv_gpu(n, n, s_dA, ldda, info) );
+	MAGMA_CALL( magma_sgetrf_nopiv_gpu(n, n, s_dA, ldda, &info) );
+	CHECK_GETRF_ERROR( int32_t(info) );
 
-	magma_sgetmatrix(n, n, s_dA, ldda, s_hA.data(), lda, queue);
-
-	copy(s_hA.begin(), s_hA.end(), d_hA.begin());
-
-	magma_dsetmatrix(n, n, d_hA.data(), lda, dA_, ldda, queue);
+	magmablas_slag2d(n, n, s_dA, ldda, dA_, ldda, queue, &info);
+	CHECK_GETRF_ERROR( int32_t(info) );
 
 	MAGMA_FREE(s_dA);
 }
