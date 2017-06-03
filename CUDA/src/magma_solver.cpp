@@ -222,6 +222,135 @@ int32_t magma_tran(const magma_int_t n) {
 	return 0;
 }
 
+int32_t magma_test_pinned(const magma_int_t n) {
+	MAGMA_CALL( magma_init() );
+
+	const magma_int_t lda  = n;
+	const magma_int_t ldda = magma_roundup(lda, 32);
+
+	magma_device_t device;
+	magma_queue_t queue = nullptr;
+	magma_getdevice(&device);
+	magma_queue_create(device, &queue);
+
+	double t[12] = { 0.0 };
+	double tmp;
+
+	FLOAT *A = nullptr;
+	MAGMA_TIMER_START( t[0], queue );
+	MAGMA_FLOAT_ALLOCATOR_CPU( A, lda*n );
+	MAGMA_TIMER_STOP( t[0], queue );
+	fill_matrix(n, n, A, lda, 100.0);
+
+	FLOAT *d_A1 = nullptr;
+	MAGMA_FLOAT_ALLOCATOR( d_A1, ldda*n );
+	MAGMA_TIMER_START( t[1], queue );
+	MAGMA_SETMATRIX( n, n, A, lda, d_A1, ldda, queue );
+	MAGMA_TIMER_STOP( t[1], queue );
+
+	FLOAT *A_pinned = nullptr;
+	MAGMA_TIMER_START( t[3], queue );
+	magma_malloc_pinned( (void **)&A_pinned, lda*n*sizeof(FLOAT) );
+	MAGMA_TIMER_STOP( t[3], queue );
+	std::copy(A, A+lda*n, A_pinned);
+
+	MAGMA_TIMER_START( t[2], queue );
+	MAGMA_GETMATRIX( n, n, d_A1, ldda, A, lda, queue );
+	MAGMA_TIMER_STOP( t[2], queue );
+
+	tmp = get_wtime();
+	MAGMA_FREE_CPU( A );
+	t[0] += get_wtime() - tmp;
+	MAGMA_FREE( d_A1 );
+
+	FLOAT *d_A2 = nullptr;
+	MAGMA_FLOAT_ALLOCATOR( d_A2, ldda*n );
+	MAGMA_TIMER_START( t[4], queue );
+	MAGMA_SETMATRIX( n, n, A_pinned, lda, d_A2, ldda, queue );
+	MAGMA_TIMER_STOP( t[4], queue );
+
+	FLOAT *x = nullptr;
+	MAGMA_TIMER_START( t[6], queue );
+	MAGMA_FLOAT_ALLOCATOR_CPU( x, lda );
+	MAGMA_TIMER_STOP( t[6], queue );
+	fill_matrix(n, 1, x, lda, 100.0);
+
+	MAGMA_TIMER_START( t[5], queue );
+	MAGMA_GETMATRIX( n, n, d_A2, ldda, A_pinned, lda, queue );
+	MAGMA_TIMER_STOP( t[5], queue );
+
+	tmp = get_wtime();
+	magma_free_pinned( A_pinned );
+	t[3] += get_wtime() - tmp;
+	MAGMA_FREE( d_A2 );
+
+	FLOAT *d_x1 = nullptr;
+	MAGMA_FLOAT_ALLOCATOR( d_x1, lda );
+	MAGMA_TIMER_START( t[7], queue );
+	MAGMA_SETVECTOR( lda, x, 1, d_x1, 1, queue);
+	MAGMA_TIMER_STOP( t[7], queue );
+
+	FLOAT *x_pinned = nullptr;
+	MAGMA_TIMER_START( t[9], queue );
+	magma_malloc_pinned( (void **)&x_pinned, lda*sizeof(FLOAT) );
+	MAGMA_TIMER_STOP( t[9], queue );
+	std::copy(x, x+lda, x_pinned);
+
+	MAGMA_TIMER_START( t[8], queue );
+	MAGMA_GETVECTOR( lda, d_x1, 1, x, 1, queue);
+	MAGMA_TIMER_STOP( t[8], queue );
+
+	FLOAT *d_x2 = nullptr;
+	MAGMA_FLOAT_ALLOCATOR( d_x2, lda );
+	MAGMA_TIMER_START( t[10], queue );
+	MAGMA_SETVECTOR( lda, x_pinned, 1, d_x2, 1, queue);
+	MAGMA_TIMER_STOP( t[10], queue );
+
+	tmp = get_wtime();
+	MAGMA_FREE_CPU( x );
+	t[7] += get_wtime() - tmp;
+	MAGMA_FREE( d_x1 );
+
+	MAGMA_TIMER_START( t[11], queue );
+	MAGMA_GETVECTOR( lda, d_x2, 1, x_pinned, 1, queue);
+	MAGMA_TIMER_STOP( t[11], queue );
+
+	MAGMA_FREE( d_x2 );
+	magma_queue_destroy(queue);
+	tmp = get_wtime();
+	magma_free_pinned( x_pinned );
+	t[9] += get_wtime() - tmp;
+
+	printf("Time malloc+free A: %f (s.)\n", t[0]);
+	printf("Time set A: %f (s.)\n", t[1]);
+	printf("Time get A: %f (s.)\n", t[2]);
+	printf("Time malloc+free A_pinned: %f (s.)\n", t[3]);
+	printf("Time set A_pinned: %f (s.)\n", t[4]);
+	printf("Time get A_pinned: %f (s.)\n", t[5]);
+	printf("Time malloc+free x: %f (s.)\n", t[6]);
+	printf("Time set x: %f (s.)\n", t[7]);
+	printf("Time get x: %f (s.)\n", t[8]);
+	printf("Time malloc+free x_pinned: %f (s.)\n", t[9]);
+	printf("Time set x_pinned: %f (s.)\n", t[10]);
+	printf("Time get x_pinned: %f (s.)\n", t[11]);
+	print_to_file_time("Time_malloc+free A.log", n, t[0]);
+	print_to_file_time("Time set A.log", n, t[1]);
+	print_to_file_time("Time get A.log", n, t[2]);
+	print_to_file_time("Time malloc+free A_pinned.log", n, t[3]);
+	print_to_file_time("Time set A_pinned.log", n, t[4]);
+	print_to_file_time("Time get A_pinned.log", n, t[5]);
+	print_to_file_time("Time malloc+free x.log", n, t[6]);
+	print_to_file_time("Time set x.log", n, t[7]);
+	print_to_file_time("Time get x.log", n, t[8]);
+	print_to_file_time("Time malloc+free x_pinned.log", n, t[9]);
+	print_to_file_time("Time set x_pinned.log", n, t[10]);
+	print_to_file_time("Time get x_pinned.log", n, t[11]);
+
+	magma_finalize();
+
+	return 0;
+}
+
 void magma_mpgetrfnpi_gpu(const magma_int_t n, magma_ptr dA, const magma_int_t ldda,
                                                           const magma_queue_t queue) {
 	magma_int_t info = 0;

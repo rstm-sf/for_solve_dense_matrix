@@ -35,6 +35,12 @@
 #define MAGMA_COPYMATRIX(m, n, dA_src, ldda, dB_dst, lddb, queue)                                  \
     magma_copymatrix(m, n, sizeof(FLOAT), dA_src, ldda, dB_dst, lddb, queue)
 
+#define MAGMA_SETVECTOR(n, hx_src, incx, dy_dst, incy, queue)                                      \
+    magma_setvector(n, sizeof(FLOAT), hx_src, incx, dy_dst, incy, queue)
+
+#define MAGMA_GETVECTOR(n, dx_src, incx, hy_dst, incy, queue)                                      \
+    magma_getvector(n, sizeof(FLOAT), dx_src, incx, hy_dst, incy, queue)
+
 #define MAGMA_COPYVECTOR(n, dx_src, incx, dy_dst, incy, queue)                                     \
     magma_copyvector(n, sizeof(FLOAT), dx_src, incx, dy_dst, incy, queue)
 
@@ -136,6 +142,7 @@ int32_t magma_solve(const magma_int_t n, const FLOAT *A, const magma_int_t lda,
 int32_t magma_solve_npi(const magma_int_t n, const FLOAT *A, const magma_int_t lda,
                                              const FLOAT *B, const magma_int_t ldb);
 int32_t magma_tran(const magma_int_t n);
+int32_t magma_test_pinned(const magma_int_t n);
 void magma_mpgetrfnpi_gpu(const magma_int_t n, magma_ptr dA, const magma_int_t ldda,
                                                           const magma_queue_t queue);
 #endif // __MAGMA_SOLVER_H__

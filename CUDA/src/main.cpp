@@ -48,6 +48,9 @@ int32_t main(int32_t argc, char** argv) {
 	case 5: // magma tran
 		magma_tran(n); break;
 
+	case 6: // magma pinned
+		magma_test_pinned(n); break;
+
 	default:
 		printf("There is no such id test.\n");
 	}
